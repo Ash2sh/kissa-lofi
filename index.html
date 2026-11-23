@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Nocturne — Lofi Desktop</title>
+    <link rel="stylesheet" href="/src/styles/main.css" />
+  </head>
+  <body>
+    <div id="app" class="app-root">
+      <!-- Atmospheric Visual Stage -->
+      <main id="stage" class="stage" aria-label="Atmospheric background stage">
+        <video
+          id="bg-video"
+          class="bg-layer bg-media hidden"
+          autoplay
+          loop
+          muted
+          playsinline
+        ></video>
+        <img id="bg-image" class="bg-layer bg-media hidden" alt="" />
+        <canvas id="bg-canvas" class="bg-layer bg-canvas"></canvas>
+        <div id="bg-dim-layer" class="bg-layer bg-dim"></div>
+      </main>
+
+      <!-- Subtle Top HUD (Active Timers & Quick Controls) -->
+      <header id="top-hud" class="top-hud">
+        <div id="top-hud-left" class="top-hud-group"></div>
+        <div id="top-hud-right" class="top-hud-group"></div>
+      </header>
+
+      <!-- Floating Module Popover Host -->
+      <section
+        id="popover-host"
+        class="popover-host hidden"
+        role="dialog"
+        aria-label="Module panel"
+      ></section>
+
+      <!-- Bottom-Overlay Frosted Glass Control Dock -->
+      <footer id="dock" class="dock-shell" aria-label="Lofi playback and module controls"></footer>
+
+      <!-- Minimal Cinema Mode Restore Pill -->
+      <button
+        id="hud-restore-btn"
+        class="hud-restore-btn hidden"
+        type="button"
+        title="Show controls (H)"
+      >
+        Show Controls (H)
+      </button>
+
+      <!-- Drag & Drop Overlay -->
+      <div id="drop-overlay" class="drop-overlay hidden" aria-hidden="true">
+        <div class="drop-overlay-card">
+          <div class="drop-overlay-title">Drop local media or Wasm plugin</div>
+          <div class="drop-overlay-sub">
+            Audio (.mp3, .flac, .wav, .ogg) · Photos &amp; Videos (.png, .jpg, .mp4, .webm) · Plugins (.wasm, .wat)
+          </div>
+        </div>
+      </div>
+
+      <!-- Toast Notifications -->
+      <div id="toast-host" class="toast-host" aria-live="polite"></div>
+
+      <!-- Hidden File Input Fallback (used only outside Tauri runtime) -->
+      <input id="browser-file-input" type="file" class="sr-only" multiple />
+    </div>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
