@@ -24,7 +24,7 @@ impl LofiPlugin for CoreAtmospherePlugin {
             id: self.id().to_string(),
             name: "Core Atmosphere".to_string(),
             version: "1.0.0".to_string(),
-            author: "Lofi Desktop".to_string(),
+            author: "Kissa".to_string(),
             description: "Native Rust acoustic presets and cozy desk scenes linked via the unified LofiPlugin trait.".to_string(),
             kind: PluginKind::Native,
             file_path: None,

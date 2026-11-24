@@ -1,12 +1,12 @@
-# AGENTS.md — Nocturne (Lofi Rust Client)
+# AGENTS.md — Kissa (`kissa-lofi`)
 
-Instructions and architectural invariants for AI coding agents and contributors working on **Nocturne**.
+Instructions and architectural invariants for AI coding agents and contributors working on **Kissa**.
 
 ---
 
 ## Project Summary
 
-**Nocturne** is a cross-platform, ultra-low-resource, local-first lofi desktop application built with **Tauri v2 + Rust** and a **zero-framework Vanilla TypeScript / HTML5 / CSS3** frontend, inspired by the layout and atmospheric feel of the **LofiCafe** website.
+**Kissa** is a cross-platform, ultra-low-resource, local-first lofi desktop application built with **Tauri v2 + Rust** and a **zero-framework Vanilla TypeScript / HTML5 / CSS3** frontend, inspired by the layout and atmospheric feel of the **LofiCafe** website.
 
 ### Core Invariants (Do Not Break)
 1. **No Heavy JS Frameworks:** Keep the frontend 100% Vanilla TypeScript, HTML5, and CSS3. Do not introduce React, Vue, Svelte, Angular, or bulky CSS frameworks.

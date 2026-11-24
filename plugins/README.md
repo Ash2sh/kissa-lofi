@@ -1,6 +1,6 @@
-# Lofi Desktop WebAssembly Plugin ABI (v1)
+# Kissa WebAssembly Plugin ABI (v1)
 
-Lofi Desktop dynamically loads `.wasm` and `.wat` plugins through the unified Rust `LofiPlugin` trait using the lightweight `wasmi` WebAssembly runtime.
+**Kissa** dynamically loads `.wasm` and `.wat` plugins through the unified Rust `LofiPlugin` trait using the lightweight `wasmi` WebAssembly runtime.
 
 ## Required Exports
 

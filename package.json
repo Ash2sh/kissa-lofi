@@ -1,7 +1,7 @@
 {
-  "name": "nocturne-lofi",
+  "name": "kissa-lofi",
   "version": "0.1.0-alpha.1",
-  "description": "Nocturne — Cross-platform, low-resource lofi desktop application built with Tauri, Rust, Vanilla TypeScript, and WebAssembly plugins.",
+  "description": "Kissa — Cross-platform, low-resource lofi desktop application built with Tauri, Rust, Vanilla TypeScript, and WebAssembly plugins.",
   "private": true,
   "type": "module",
   "scripts": {

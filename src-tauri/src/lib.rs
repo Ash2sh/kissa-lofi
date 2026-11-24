@@ -343,13 +343,13 @@ fn get_system_metrics(state: State<'_, Arc<AppState>>) -> SystemMetrics {
 }
 
 fn setup_tray(app: &AppHandle) -> tauri::Result<()> {
-    let show_item = MenuItem::with_id(app, "show", "Show / Hide Nocturne", true, None::<&str>)?;
+    let show_item = MenuItem::with_id(app, "show", "Show / Hide Kissa", true, None::<&str>)?;
     let quit_item = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
     let menu = Menu::with_items(app, &[&show_item, &quit_item])?;
 
     let mut builder = TrayIconBuilder::new()
         .menu(&menu)
-        .tooltip("Nocturne")
+        .tooltip("Kissa")
         .on_menu_event(|app, event| match event.id.as_ref() {
             "show" => {
                 if let Some(window) = app.get_webview_window("main") {
