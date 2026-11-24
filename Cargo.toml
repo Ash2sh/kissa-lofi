@@ -5,14 +5,13 @@ description = "Whisper-quiet, 100% pure-Rust native lofi desktop café with dyna
 authors = ["Ash2sh"]
 license = "MIT"
 repository = "https://github.com/Ash2sh/kissa-lofi"
-homepage = "https://github.com/Ash2sh/kissa-lofi"
 readme = "README.md"
 keywords = ["lofi", "music", "egui", "wasm", "desktop"]
 categories = ["multimedia::audio", "gui"]
 edition = "2021"
 
 [dependencies]
-eframe = { version = "0.31", default-features = false, features = ["default_fonts", "glow"] }
+eframe = { version = "0.31", default-features = false, features = ["default_fonts", "glow", "wayland", "x11"] }
 egui = "0.31"
 cpal = "0.15"
 symphonia = { version = "0.5", features = ["mp3", "flac", "wav", "ogg", "vorbis", "aac", "isomp4", "pcm"] }
