@@ -440,14 +440,46 @@ pub const BUILTIN_STATIONS: &[LofiStation] = &[
 ];
 
 pub const AMBIENT_CHANNELS: &[AmbientChannelDef] = &[
-    AmbientChannelDef { id: "rain", name: "Rain", description: "Steady midnight rain on glass" },
-    AmbientChannelDef { id: "vinyl", name: "Vinyl", description: "Warm dusty record crackle" },
-    AmbientChannelDef { id: "fireplace", name: "Fireplace", description: "Soft crackling hearth embers" },
-    AmbientChannelDef { id: "thunder", name: "Thunder", description: "Distant low rolling rumbles" },
-    AmbientChannelDef { id: "wind", name: "Night Wind", description: "Gentle breeze outside the window" },
-    AmbientChannelDef { id: "cafe", name: "Cafe", description: "Quiet muffled coffeehouse room" },
-    AmbientChannelDef { id: "forest", name: "Forest", description: "Soft evening crickets & leaves" },
-    AmbientChannelDef { id: "ocean", name: "Ocean", description: "Slow rhythmic nocturnal surf" },
+    AmbientChannelDef {
+        id: "rain",
+        name: "Rain",
+        description: "Steady midnight rain on glass",
+    },
+    AmbientChannelDef {
+        id: "vinyl",
+        name: "Vinyl",
+        description: "Warm dusty record crackle",
+    },
+    AmbientChannelDef {
+        id: "fireplace",
+        name: "Fireplace",
+        description: "Soft crackling hearth embers",
+    },
+    AmbientChannelDef {
+        id: "thunder",
+        name: "Thunder",
+        description: "Distant low rolling rumbles",
+    },
+    AmbientChannelDef {
+        id: "wind",
+        name: "Night Wind",
+        description: "Gentle breeze outside the window",
+    },
+    AmbientChannelDef {
+        id: "cafe",
+        name: "Cafe",
+        description: "Quiet muffled coffeehouse room",
+    },
+    AmbientChannelDef {
+        id: "forest",
+        name: "Forest",
+        description: "Soft evening crickets & leaves",
+    },
+    AmbientChannelDef {
+        id: "ocean",
+        name: "Ocean",
+        description: "Slow rhythmic nocturnal surf",
+    },
 ];
 
 pub fn builtin_eq_presets() -> Vec<EqPreset> {

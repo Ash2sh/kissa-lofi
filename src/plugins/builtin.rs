@@ -13,6 +13,7 @@ pub struct BuiltinModulePlugin {
 }
 
 impl BuiltinModulePlugin {
+    #[allow(clippy::too_many_arguments)]
     const fn new(
         plugin_id: &'static str,
         module_id: &'static str,

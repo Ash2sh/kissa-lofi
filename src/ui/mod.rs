@@ -15,7 +15,9 @@ use crate::ui::popovers::{format_clock, show_active_popover};
 use crate::ui::scenes::{SceneRenderer, BUILTIN_CANVAS_SCENES};
 use crate::video::BackgroundMedia;
 use base64::{engine::general_purpose::STANDARD as B64, Engine as _};
-use egui::{Align2, Color32, CornerRadius, Frame, Key, Margin, RichText, Stroke, Vec2, ViewportCommand};
+use egui::{
+    Align2, Color32, CornerRadius, Frame, Key, Margin, RichText, Stroke, Vec2, ViewportCommand,
+};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{Duration, Instant};
@@ -23,7 +25,10 @@ use std::time::{Duration, Instant};
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ActivePanel {
     Builtin(String),
-    ExternalPlugin { plugin_id: String, module_id: String },
+    ExternalPlugin {
+        plugin_id: String,
+        module_id: String,
+    },
     PluginManager,
 }
 
@@ -33,6 +38,7 @@ pub struct StartupOverrides {
     pub auto_play: bool,
     pub rain_level: Option<f32>,
     pub apply_wasm_tape: bool,
+    pub screenshot_path: Option<PathBuf>,
 }
 
 pub struct KissaApp {
@@ -76,6 +82,9 @@ pub struct KissaApp {
     toast_msg: Option<(String, Instant)>,
     pending_visual_init: bool,
     startup_overrides: Option<StartupOverrides>,
+    screenshot_target: Option<PathBuf>,
+    screenshot_requested: bool,
+    frame_count: u32,
 }
 
 impl KissaApp {
@@ -105,7 +114,11 @@ impl KissaApp {
 
         // Prepare initial audio source
         if config.audio_source.kind == "local" {
-            if let Some(track) = library.music.iter().find(|m| m.id == config.audio_source.id) {
+            if let Some(track) = library
+                .music
+                .iter()
+                .find(|m| m.id == config.audio_source.id)
+            {
                 let _ = audio.play_local_file(PathBuf::from(&track.file_path), false);
             } else {
                 audio.select_station("focus-zone-relax-mellow", false);
@@ -149,6 +162,9 @@ impl KissaApp {
             last_frame: Instant::now(),
             toast_msg: None,
             pending_visual_init: true,
+            screenshot_target: overrides.screenshot_path.clone(),
+            screenshot_requested: false,
+            frame_count: 0,
             startup_overrides: Some(overrides),
         }
     }
@@ -267,10 +283,12 @@ impl KissaApp {
     }
 
     pub fn invoke_plugin_action(&mut self, plugin_id: &str, action_id: &str, value: f32) {
-        match self
-            .plugin_mgr
-            .invoke_plugin_action(plugin_id, action_id, value, self.config.eq_bands)
-        {
+        match self.plugin_mgr.invoke_plugin_action(
+            plugin_id,
+            action_id,
+            value,
+            self.config.eq_bands,
+        ) {
             Ok(res) => {
                 if let Some(panel) = res.panel {
                     self.active_plugin_panel = Some(panel);
@@ -297,7 +315,9 @@ impl KissaApp {
                             self.set_ambience_level(&channel, level);
                         }
                         PluginHostCommand::SetVisual { visual_id } => {
-                            if let Some(sc) = BUILTIN_CANVAS_SCENES.iter().find(|s| s.id == visual_id) {
+                            if let Some(sc) =
+                                BUILTIN_CANVAS_SCENES.iter().find(|s| s.id == visual_id)
+                            {
                                 self.select_canvas_scene(sc.id, sc.name);
                             }
                         }
@@ -327,7 +347,10 @@ impl KissaApp {
     }
 
     pub fn play_local_track(&mut self, item: &MediaItem, record_history: bool) {
-        match self.audio.play_local_file(PathBuf::from(&item.file_path), true) {
+        match self
+            .audio
+            .play_local_file(PathBuf::from(&item.file_path), true)
+        {
             Ok(()) => {
                 self.config.audio_source = AudioSourceRef {
                     kind: "local".to_string(),
@@ -472,7 +495,11 @@ impl KissaApp {
             id: format!("user-scene-{}", now_unix()),
             name: name.clone(),
             mood,
-            description: format!("Custom mix: {} + {}", self.config.visual.label, self.current_eq_name()),
+            description: format!(
+                "Custom mix: {} + {}",
+                self.config.visual.label,
+                self.current_eq_name()
+            ),
             builtin: false,
             visual: self.config.visual.clone(),
             visual_fx: self.config.visual_fx.clone(),
@@ -505,7 +532,11 @@ impl KissaApp {
         self.plugin_snap = self.plugin_mgr.snapshot();
         self.save_config();
         if !enabled {
-            if let Some(ActivePanel::ExternalPlugin { plugin_id: active_id, .. }) = &self.active_panel {
+            if let Some(ActivePanel::ExternalPlugin {
+                plugin_id: active_id,
+                ..
+            }) = &self.active_panel
+            {
                 if active_id == plugin_id {
                     self.close_panel();
                 }
@@ -575,7 +606,12 @@ impl KissaApp {
     pub fn pick_local_files(&mut self, category: &str) {
         let mut dlg = rfd::FileDialog::new().set_title(format!("Select {category} files"));
         dlg = if category == "visuals" {
-            dlg.add_filter("Photos & Videos", &["mp4", "webm", "mov", "mkv", "jpg", "jpeg", "png", "webp", "gif"])
+            dlg.add_filter(
+                "Photos & Videos",
+                &[
+                    "mp4", "webm", "mov", "mkv", "jpg", "jpeg", "png", "webp", "gif",
+                ],
+            )
         } else {
             dlg.add_filter("Audio", &["mp3", "flac", "wav", "ogg", "m4a", "aac"])
         };
@@ -587,7 +623,11 @@ impl KissaApp {
     }
 
     fn register_dropped_or_picked_path(&mut self, path: &Path) {
-        if let Some(ext) = path.extension().and_then(|e| e.to_str()).map(|s| s.to_ascii_lowercase()) {
+        if let Some(ext) = path
+            .extension()
+            .and_then(|e| e.to_str())
+            .map(|s| s.to_ascii_lowercase())
+        {
             if ext == "wasm" || ext == "wat" {
                 self.install_plugin_file(path);
                 return;
@@ -599,12 +639,19 @@ impl KissaApp {
         };
         let abs = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
         let abs_str = strip_windows_verbatim_prefix(&abs.to_string_lossy());
-        if !self.config.extra_files.iter().any(|f| f.eq_ignore_ascii_case(&abs_str)) {
+        if !self
+            .config
+            .extra_files
+            .iter()
+            .any(|f| f.eq_ignore_ascii_case(&abs_str))
+        {
             self.config.extra_files.push(abs_str.clone());
             self.save_config();
         }
         self.library = self.storage.scan_library(&self.config);
-        if let Some(item) = crate::storage::build_media_item(Path::new(&abs_str), kind.clone(), &ext) {
+        if let Some(item) =
+            crate::storage::build_media_item(Path::new(&abs_str), kind.clone(), &ext)
+        {
             match kind {
                 MediaKind::Video | MediaKind::Image => self.select_local_visual(&item),
                 MediaKind::Audio | MediaKind::Ambient => self.play_local_track(&item, true),
@@ -630,7 +677,12 @@ impl KissaApp {
             ref_id: ref_id.to_string(),
             timestamp_unix: now_unix(),
         };
-        if self.history.first().map(|e| (e.ref_id.as_str(), e.kind.as_str())) == Some((ref_id, kind)) {
+        if self
+            .history
+            .first()
+            .map(|e| (e.ref_id.as_str(), e.kind.as_str()))
+            == Some((ref_id, kind))
+        {
             self.history[0] = entry;
         } else {
             self.history.insert(0, entry);
@@ -638,7 +690,8 @@ impl KissaApp {
         }
         let _ = self.storage.save_history(&self.history);
         if kind == "scene" {
-            self.plugin_mgr.dispatch_event(&PluginEvent::SceneChanged { scene_index: 1 });
+            self.plugin_mgr
+                .dispatch_event(&PluginEvent::SceneChanged { scene_index: 1 });
         } else {
             self.plugin_mgr.dispatch_event(&PluginEvent::TrackChanged {
                 bpm_hint: 76,
@@ -651,7 +704,13 @@ impl KissaApp {
         match entry.kind.as_str() {
             "station" => self.select_station(&entry.ref_id, false),
             "track" => {
-                if let Some(item) = self.library.music.iter().find(|m| m.id == entry.ref_id).cloned() {
+                if let Some(item) = self
+                    .library
+                    .music
+                    .iter()
+                    .find(|m| m.id == entry.ref_id)
+                    .cloned()
+                {
                     self.play_local_track(&item, false);
                 }
             }
@@ -687,14 +746,23 @@ impl KissaApp {
             self.toast("Invalid scene JSON");
             return;
         };
-        if let Some(v) = val.get("visual").and_then(|x| serde_json::from_value(x.clone()).ok()) {
+        if let Some(v) = val
+            .get("visual")
+            .and_then(|x| serde_json::from_value(x.clone()).ok())
+        {
             self.config.visual = v;
             self.pending_visual_init = true;
         }
-        if let Some(fx) = val.get("visualFx").and_then(|x| serde_json::from_value(x.clone()).ok()) {
+        if let Some(fx) = val
+            .get("visualFx")
+            .and_then(|x| serde_json::from_value(x.clone()).ok())
+        {
             self.config.visual_fx = fx;
         }
-        if let Some(b) = val.get("eqBands").and_then(|x| serde_json::from_value(x.clone()).ok()) {
+        if let Some(b) = val
+            .get("eqBands")
+            .and_then(|x| serde_json::from_value(x.clone()).ok())
+        {
             self.config.eq_bands = b;
             self.audio.set_eq(b);
         }
@@ -702,7 +770,10 @@ impl KissaApp {
             self.config.tape_cutoff_hz = hz as f32;
             self.audio.set_tape_cutoff(hz as f32);
         }
-        if let Some(amb) = val.get("ambience").and_then(|x| serde_json::from_value(x.clone()).ok()) {
+        if let Some(amb) = val
+            .get("ambience")
+            .and_then(|x| serde_json::from_value(x.clone()).ok())
+        {
             self.config.ambience = amb;
             self.audio.set_ambience(&self.config.ambience);
         }
@@ -811,7 +882,11 @@ impl KissaApp {
         };
         if let Some(vid) = ov.video_path {
             if vid.is_file() {
-                let title = vid.file_stem().and_then(|s| s.to_str()).unwrap_or("video").to_string();
+                let title = vid
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("video")
+                    .to_string();
                 self.config.visual = VisualSource {
                     kind: "video".to_string(),
                     id: vid.to_string_lossy().to_string(),
@@ -822,8 +897,16 @@ impl KissaApp {
         }
         if let Some(aud) = ov.audio_path {
             if aud.is_file() {
-                let title = aud.file_stem().and_then(|s| s.to_str()).unwrap_or("track").to_string();
-                if self.audio.play_local_file(aud.clone(), ov.auto_play).is_ok() {
+                let title = aud
+                    .file_stem()
+                    .and_then(|s| s.to_str())
+                    .unwrap_or("track")
+                    .to_string();
+                if self
+                    .audio
+                    .play_local_file(aud.clone(), ov.auto_play)
+                    .is_ok()
+                {
                     self.config.audio_source = AudioSourceRef {
                         kind: "local".to_string(),
                         id: "cli-audio".to_string(),
@@ -953,7 +1036,8 @@ impl KissaApp {
         if self.sleep_running {
             self.sleep_remaining_sec = self.sleep_remaining_sec.saturating_sub(1);
             if self.sleep_remaining_sec <= 30 {
-                self.audio.set_sleep_fade(self.sleep_remaining_sec as f32 / 30.0);
+                self.audio
+                    .set_sleep_fade(self.sleep_remaining_sec as f32 / 30.0);
             }
             if self.sleep_remaining_sec == 0 {
                 self.sleep_running = false;
@@ -1013,27 +1097,31 @@ impl eframe::App for KissaApp {
                     .order(egui::Order::Foreground)
                     .show(ctx, |ui| {
                         ui.horizontal(|ui| {
-                            if self.focus_running {
-                                if hud_pill_btn(
+                            if self.focus_running
+                                && hud_pill_btn(
                                     ui,
                                     &format!(
                                         "● {} {}",
-                                        if self.focus_is_break { "Break" } else { "Focus" },
+                                        if self.focus_is_break {
+                                            "Break"
+                                        } else {
+                                            "Focus"
+                                        },
                                         format_clock(self.focus_remaining_sec)
                                     ),
                                     Color32::from_rgb(56, 189, 248),
-                                ) {
-                                    self.active_panel = Some(ActivePanel::Builtin("focus".into()));
-                                }
+                                )
+                            {
+                                self.active_panel = Some(ActivePanel::Builtin("focus".into()));
                             }
-                            if self.sleep_running {
-                                if hud_pill_btn(
+                            if self.sleep_running
+                                && hud_pill_btn(
                                     ui,
                                     &format!("● Sleep {}", format_clock(self.sleep_remaining_sec)),
                                     Color32::from_rgb(167, 139, 250),
-                                ) {
-                                    self.active_panel = Some(ActivePanel::Builtin("sleep".into()));
-                                }
+                                )
+                            {
+                                self.active_panel = Some(ActivePanel::Builtin("sleep".into()));
                             }
                         });
                     });
@@ -1143,7 +1231,10 @@ impl eframe::App for KissaApp {
                     .show(ctx, |ui| {
                         Frame::new()
                             .fill(Color32::from_rgba_unmultiplied(15, 18, 28, 240))
-                            .stroke(Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 32)))
+                            .stroke(Stroke::new(
+                                1.0,
+                                Color32::from_rgba_unmultiplied(255, 255, 255, 32),
+                            ))
                             .corner_radius(CornerRadius::same(10))
                             .inner_margin(Margin::symmetric(12, 8))
                             .show(ui, |ui| {
@@ -1152,6 +1243,36 @@ impl eframe::App for KissaApp {
                     });
             } else {
                 self.toast_msg = None;
+            }
+        }
+
+        self.frame_count = self.frame_count.saturating_add(1);
+
+        // Handle automated native screenshot capture (--screenshot <path>)
+        if let Some(out_path) = self.screenshot_target.clone() {
+            let captured = ctx.input(|i| {
+                i.events.iter().find_map(|e| {
+                    if let egui::Event::Screenshot { image, .. } = e {
+                        Some(image.clone())
+                    } else {
+                        None
+                    }
+                })
+            });
+            if let Some(img) = captured {
+                let raw: Vec<u8> = img.pixels.iter().flat_map(|c| c.to_array()).collect();
+                let _ = image::save_buffer(
+                    &out_path,
+                    &raw,
+                    img.width() as u32,
+                    img.height() as u32,
+                    image::ColorType::Rgba8,
+                );
+                self.screenshot_target = None;
+                ctx.send_viewport_cmd(ViewportCommand::Close);
+            } else if !self.screenshot_requested && self.frame_count >= 18 {
+                self.screenshot_requested = true;
+                ctx.send_viewport_cmd(ViewportCommand::Screenshot(egui::UserData::default()));
             }
         }
 
@@ -1167,11 +1288,18 @@ impl eframe::App for KissaApp {
 }
 
 fn hud_pill_btn(ui: &mut egui::Ui, label: &str, color: Color32) -> bool {
-    let btn = egui::Button::new(RichText::new(label).size(11.5).color(color))
-        .fill(Color32::from_rgba_unmultiplied(12, 13, 20, 175))
-        .stroke(Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 24)))
-        .corner_radius(CornerRadius::same(99));
-    ui.add(btn).clicked()
+    ui.scope(|ui| {
+        ui.spacing_mut().button_padding = Vec2::new(10.0, 4.0);
+        let btn = egui::Button::new(RichText::new(label).size(11.5).color(color))
+            .fill(Color32::from_rgba_unmultiplied(12, 13, 20, 185))
+            .stroke(Stroke::new(
+                1.0,
+                Color32::from_rgba_unmultiplied(255, 255, 255, 26),
+            ))
+            .corner_radius(CornerRadius::same(99));
+        ui.add(btn).clicked()
+    })
+    .inner
 }
 
 fn apply_kissa_theme(ctx: &egui::Context) {

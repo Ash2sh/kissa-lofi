@@ -14,7 +14,10 @@ pub const BUILTIN_CANVAS_SCENES: &[CanvasSceneDef] = &[
         id: "rainy-window-cat",
         name: "Rainy Window Cat",
         subtitle: "Open night window, city lights & rain",
-        swatch: [Color32::from_rgb(29, 26, 75), Color32::from_rgb(81, 74, 158)],
+        swatch: [
+            Color32::from_rgb(29, 26, 75),
+            Color32::from_rgb(81, 74, 158),
+        ],
     },
     CanvasSceneDef {
         id: "neon-rain-skyline",
@@ -32,7 +35,10 @@ pub const BUILTIN_CANVAS_SCENES: &[CanvasSceneDef] = &[
         id: "warm-study-dusk",
         name: "Warm Study Dusk",
         subtitle: "Golden dusk clouds & drifting dust motes",
-        swatch: [Color32::from_rgb(39, 21, 46), Color32::from_rgb(201, 122, 83)],
+        swatch: [
+            Color32::from_rgb(39, 21, 46),
+            Color32::from_rgb(201, 122, 83),
+        ],
     },
 ];
 
@@ -154,7 +160,14 @@ impl SceneRenderer {
                 painter.rect_filled(rect, 0.0, Color32::from_rgb(9, 11, 18));
             }
             if fx.rain_overlay > 0.01 {
-                self.paint_rain(painter, rect, dt, fx.rain_overlay, rect.left(), rect.right());
+                self.paint_rain(
+                    painter,
+                    rect,
+                    dt,
+                    fx.rain_overlay,
+                    rect.left(),
+                    rect.right(),
+                );
             }
         } else {
             match source.id.as_str() {
@@ -203,34 +216,38 @@ impl SceneRenderer {
             Color32::from_rgb(112, 98, 190),
         );
 
-        // Soft moonlight haze top-left
-        painter.circle_filled(
-            Pos2::new(ox + w * 0.37, oy + h * 0.09),
-            w * 0.16,
-            Color32::from_rgba_unmultiplied(208, 214, 245, 36),
+        // Soft radial moonlight haze & horizon mist (smooth GPU mesh gradients — zero hard circles)
+        paint_radial_glow(
+            painter,
+            Pos2::new(ox + w * 0.37, oy + h * 0.08),
+            w * 0.24,
+            Color32::from_rgba_unmultiplied(198, 206, 248, 62),
         );
-        // Horizon glow behind city towers
-        painter.circle_filled(
-            Pos2::new(ox + w * 0.53, oy + h * 0.72),
-            w * 0.22,
-            Color32::from_rgba_unmultiplied(178, 162, 238, 52),
+        paint_radial_glow(
+            painter,
+            Pos2::new(ox + w * 0.53, oy + h * 0.78),
+            w * 0.34,
+            Color32::from_rgba_unmultiplied(180, 160, 242, 95),
         );
 
-        // Drifting storm cloud puffs along top (strictly convex circles + band)
+        // Soft drifting storm cloud puffs along top (smooth radial gradients)
         let drift = (t * 0.08).sin() * 14.0;
-        let cloud_col = Color32::from_rgba_unmultiplied(26, 24, 72, 152);
-        painter.rect_filled(
-            Rect::from_min_max(Pos2::new(win_l, oy), Pos2::new(win_r, oy + h * 0.16)),
-            0.0,
-            cloud_col,
+        let cloud_col = Color32::from_rgba_unmultiplied(20, 18, 56, 170);
+        paint_vertical_gradient(
+            painter,
+            Rect::from_min_max(Pos2::new(win_l, oy), Pos2::new(win_r, oy + h * 0.26)),
+            Color32::from_rgba_unmultiplied(18, 16, 52, 165),
+            Color32::from_rgba_unmultiplied(24, 22, 66, 90),
+            Color32::TRANSPARENT,
         );
         for &(cx, cy, cr) in &[
-            (0.35_f32, 0.14_f32, 0.09_f32),
-            (0.47, 0.17, 0.11),
-            (0.58, 0.14, 0.10),
-            (0.70, 0.18, 0.12),
+            (0.34_f32, 0.13_f32, 0.15_f32),
+            (0.47, 0.15, 0.18),
+            (0.60, 0.12, 0.17),
+            (0.73, 0.16, 0.18),
         ] {
-            painter.circle_filled(
+            paint_radial_glow(
+                painter,
                 Pos2::new(ox + w * cx + drift, oy + h * cy),
                 w * cr,
                 cloud_col,
@@ -250,66 +267,88 @@ impl SceneRenderer {
                 let u = i as f32 / 12.0;
                 let inv = 1.0 - u;
                 let x = win_l + (win_r - win_l) * u;
-                let y = oy + (inv * inv * y1 + 2.0 * inv * u * cy + u * u * y2) * h + sway * u * inv * 3.0;
+                let y = oy
+                    + (inv * inv * y1 + 2.0 * inv * u * cy + u * u * y2) * h
+                    + sway * u * inv * 3.0;
                 pts.push(Pos2::new(x, y));
             }
             painter.add(Shape::line(pts, wire_stroke));
         }
 
         for &(bx, by, br) in &[
-            (0.42_f32, 0.23_f32, 5.0_f32),
-            (0.495, 0.14, 7.5),
-            (0.515, 0.115, 4.5),
-            (0.69, 0.045, 7.0),
-            (0.785, 0.175, 6.5),
+            (0.42_f32, 0.23_f32, 5.5_f32),
+            (0.495, 0.14, 8.0),
+            (0.515, 0.115, 4.8),
+            (0.69, 0.045, 7.5),
+            (0.785, 0.175, 7.0),
         ] {
             let pulse = 0.78 + 0.22 * (t * 1.4 + bx * 15.0).sin();
             let c = Pos2::new(ox + w * bx, oy + h * by + sway * 0.35);
-            painter.circle_filled(
+            paint_radial_glow(
+                painter,
                 c,
-                br * 2.8,
-                Color32::from_rgba_unmultiplied(255, 236, 178, (55.0 * pulse) as u8),
+                br * 3.8,
+                Color32::from_rgba_unmultiplied(255, 232, 168, (115.0 * pulse) as u8),
+            );
+            paint_radial_glow(
+                painter,
+                c,
+                br * 1.5,
+                Color32::from_rgba_unmultiplied(255, 246, 214, (210.0 * pulse) as u8),
             );
             painter.circle_filled(
                 c,
-                br * 1.3,
-                Color32::from_rgba_unmultiplied(255, 242, 200, (135.0 * pulse) as u8),
-            );
-            painter.circle_filled(
-                c,
-                br * 0.65,
-                Color32::from_rgba_unmultiplied(255, 250, 232, (235.0 * pulse) as u8),
+                br * 0.55,
+                Color32::from_rgba_unmultiplied(255, 252, 238, (245.0 * pulse) as u8),
             );
         }
 
         // 3. Distant city silhouettes
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(ox + w * 0.425, oy + h * 0.54), Vec2::new(w * 0.092, h * 0.46)),
+            Rect::from_min_size(
+                Pos2::new(ox + w * 0.425, oy + h * 0.54),
+                Vec2::new(w * 0.092, h * 0.46),
+            ),
             0.0,
             Color32::from_rgb(38, 33, 76),
         );
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(ox + w * 0.44, oy + h * 0.495), Vec2::new(w * 0.062, h * 0.06)),
+            Rect::from_min_size(
+                Pos2::new(ox + w * 0.44, oy + h * 0.495),
+                Vec2::new(w * 0.062, h * 0.06),
+            ),
             0.0,
             Color32::from_rgb(38, 33, 76),
         );
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(ox + w * 0.28, oy + h * 0.39), Vec2::new(w * 0.095, h * 0.61)),
+            Rect::from_min_size(
+                Pos2::new(ox + w * 0.28, oy + h * 0.39),
+                Vec2::new(w * 0.095, h * 0.61),
+            ),
             0.0,
             Color32::from_rgb(25, 21, 47),
         );
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(ox + w * 0.275, oy + h * 0.375), Vec2::new(w * 0.108, h * 0.022)),
+            Rect::from_min_size(
+                Pos2::new(ox + w * 0.275, oy + h * 0.375),
+                Vec2::new(w * 0.108, h * 0.022),
+            ),
             0.0,
             Color32::from_rgb(25, 21, 47),
         );
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(ox + w * 0.715, oy + h * 0.29), Vec2::new(w * 0.12, h * 0.71)),
+            Rect::from_min_size(
+                Pos2::new(ox + w * 0.715, oy + h * 0.29),
+                Vec2::new(w * 0.12, h * 0.71),
+            ),
             0.0,
             Color32::from_rgb(22, 19, 43),
         );
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(ox + w * 0.735, oy + h * 0.265), Vec2::new(w * 0.048, h * 0.035)),
+            Rect::from_min_size(
+                Pos2::new(ox + w * 0.735, oy + h * 0.265),
+                Vec2::new(w * 0.048, h * 0.035),
+            ),
             0.0,
             Color32::from_rgb(22, 19, 43),
         );
@@ -342,26 +381,46 @@ impl SceneRenderer {
         // 4. Falling rain streaks inside the window view
         self.paint_rain(painter, rect, dt, rain_overlay.max(0.18), win_l, win_r);
 
-        // 5. Potted leafy plant on sill
+        // 5. Lush potted leafy plant on sill (dense layered foliage dome)
         let cx = ox + w * 0.415;
         let pot_y = oy + h * 0.79;
         let pot_w = w * 0.165;
         let pot_h = h * 0.22;
-        let breeze = (t * 1.3).sin() * 2.5;
+        let breeze = (t * 1.3).sin() * 2.2;
         let leaf_cols = [
-            Color32::from_rgb(28, 50, 34),
-            Color32::from_rgb(44, 78, 46),
-            Color32::from_rgb(61, 107, 55),
-            Color32::from_rgb(91, 137, 68),
-            Color32::from_rgb(129, 168, 88),
+            Color32::from_rgb(22, 42, 28),
+            Color32::from_rgb(34, 64, 38),
+            Color32::from_rgb(52, 92, 48),
+            Color32::from_rgb(76, 122, 58),
+            Color32::from_rgb(112, 154, 76),
         ];
-        for i in 0..38 {
-            let ratio = i as f32 / 37.0;
-            let angle = std::f32::consts::PI + ratio * std::f32::consts::PI;
-            let lx = cx + angle.cos() * pot_w * (0.48 + ((i * 7) % 5) as f32 * 0.045) + breeze * 0.6;
-            let ly = pot_y + 10.0 + angle.sin() * h * (0.09 + ((i * 11) % 6) as f32 * 0.015);
-            let rad = 9.0 + (i % 4) as f32 * 4.2;
-            painter.circle_filled(Pos2::new(lx, ly), rad, leaf_cols[i % leaf_cols.len()]);
+        // Dark foliage core dome so there are never hollow gaps
+        painter.circle_filled(
+            Pos2::new(cx, pot_y - h * 0.025),
+            pot_w * 0.48,
+            Color32::from_rgb(19, 36, 24),
+        );
+        // Multi-ring layered foliage tufts
+        for layer in 0..3 {
+            let count = 24 + layer * 8;
+            let rad_scale = 0.50 - layer as f32 * 0.13;
+            let y_lift = layer as f32 * h * 0.024;
+            for i in 0..count {
+                let u = i as f32 / (count - 1) as f32;
+                let angle = std::f32::consts::PI * (1.03 + u * 0.94);
+                let jitter_x = (((i * 17 + layer * 11) % 7) as f32 - 3.0) * 3.8;
+                let jitter_y = (((i * 13 + layer * 5) % 5) as f32 - 2.0) * 3.2;
+                let lx = cx
+                    + angle.cos() * pot_w * rad_scale
+                    + jitter_x
+                    + breeze * (0.4 + layer as f32 * 0.25);
+                let ly = pot_y + 2.0 - y_lift
+                    + angle.sin() * h * (0.095 - layer as f32 * 0.015)
+                    + jitter_y;
+                let rad = 11.0 - layer as f32 * 1.8 + ((i + layer) % 3) as f32 * 2.8;
+                let col_idx = (layer + (i % 3)).min(leaf_cols.len() - 1);
+                painter.circle_filled(Pos2::new(lx, ly), rad, leaf_cols[col_idx]);
+            }
         }
         let pot_pts = vec![
             Pos2::new(cx - pot_w * 0.48, pot_y),
@@ -371,48 +430,64 @@ impl SceneRenderer {
         ];
         painter.add(Shape::convex_polygon(
             pot_pts,
-            Color32::from_rgb(98, 38, 34),
+            Color32::from_rgb(92, 36, 32),
             Stroke::NONE,
         ));
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(cx - pot_w * 0.51, pot_y - 4.0), Vec2::new(pot_w * 1.02, 12.0)),
-            2.0,
-            Color32::from_rgb(122, 48, 40),
+            Rect::from_min_size(
+                Pos2::new(cx - pot_w * 0.51, pot_y - 4.0),
+                Vec2::new(pot_w * 1.02, 12.0),
+            ),
+            2.5,
+            Color32::from_rgb(116, 46, 38),
         );
 
         // 6. Perched black cat silhouette looking left into the rain
-        let breath = (t * 1.2).sin() * 1.6;
+        let breath = (t * 1.2).sin() * 1.4;
         let ear_twitch = if (t * 0.45).sin() > 0.96 {
-            (t * 18.0).sin() * 2.5
+            (t * 18.0).sin() * 2.2
         } else {
             0.0
         };
-        let cat_col = Color32::from_rgb(11, 10, 23);
-        // Body polygon
+        let cat_col = Color32::from_rgb(12, 11, 24);
+        // Seated torso & curved back
         let body = vec![
             Pos2::new(ox + w * 0.642, oy + h),
-            Pos2::new(ox + w * 0.646, oy + h * 0.72),
-            Pos2::new(ox + w * 0.642, oy + h * 0.50 + breath),
-            Pos2::new(ox + w * 0.725, oy + h * 0.44 + breath),
-            Pos2::new(ox + w * 0.785, oy + h * 0.66),
-            Pos2::new(ox + w * 0.818, oy + h),
+            Pos2::new(ox + w * 0.648, oy + h * 0.68),
+            Pos2::new(ox + w * 0.654, oy + h * 0.50 + breath),
+            Pos2::new(ox + w * 0.728, oy + h * 0.46 + breath),
+            Pos2::new(ox + w * 0.778, oy + h * 0.62),
+            Pos2::new(ox + w * 0.806, oy + h * 0.82),
+            Pos2::new(ox + w * 0.812, oy + h),
         ];
         painter.add(Shape::convex_polygon(body, cat_col, Stroke::NONE));
-        // Head + pointed ears
-        let head_center = Pos2::new(ox + w * 0.675, oy + h * 0.415 + breath);
-        painter.circle_filled(head_center, w * 0.048, cat_col);
-        // Snout profile left
+        // Neck bridge + soft shoulder curve
         painter.circle_filled(
-            Pos2::new(ox + w * 0.625, oy + h * 0.455 + breath),
-            w * 0.018,
+            Pos2::new(ox + w * 0.695, oy + h * 0.51 + breath),
+            w * 0.044,
             cat_col,
         );
-        // Left front ear
+        // Head cranium
+        let head_center = Pos2::new(ox + w * 0.674, oy + h * 0.405 + breath);
+        painter.circle_filled(head_center, w * 0.043, cat_col);
+        // Sculpted side-profile muzzle (tapered polygon, not a round ball)
         painter.add(Shape::convex_polygon(
             vec![
-                Pos2::new(ox + w * 0.625, oy + h * 0.39 + breath),
-                Pos2::new(ox + w * 0.612 + ear_twitch, oy + h * 0.275 + breath),
-                Pos2::new(ox + w * 0.668, oy + h * 0.345 + breath),
+                Pos2::new(ox + w * 0.642, oy + h * 0.395 + breath),
+                Pos2::new(ox + w * 0.618, oy + h * 0.422 + breath),
+                Pos2::new(ox + w * 0.621, oy + h * 0.448 + breath),
+                Pos2::new(ox + w * 0.654, oy + h * 0.462 + breath),
+                Pos2::new(ox + w * 0.678, oy + h * 0.435 + breath),
+            ],
+            cat_col,
+            Stroke::NONE,
+        ));
+        // Left front ear (sleek pointed triangle)
+        painter.add(Shape::convex_polygon(
+            vec![
+                Pos2::new(ox + w * 0.634, oy + h * 0.378 + breath),
+                Pos2::new(ox + w * 0.622 + ear_twitch, oy + h * 0.278 + breath),
+                Pos2::new(ox + w * 0.672, oy + h * 0.342 + breath),
             ],
             cat_col,
             Stroke::NONE,
@@ -420,22 +495,22 @@ impl SceneRenderer {
         // Back ear
         painter.add(Shape::convex_polygon(
             vec![
-                Pos2::new(ox + w * 0.662, oy + h * 0.35 + breath),
-                Pos2::new(ox + w * 0.686, oy + h * 0.305 + breath),
-                Pos2::new(ox + w * 0.72, oy + h * 0.385 + breath),
+                Pos2::new(ox + w * 0.666, oy + h * 0.348 + breath),
+                Pos2::new(ox + w * 0.688, oy + h * 0.298 + breath),
+                Pos2::new(ox + w * 0.714, oy + h * 0.376 + breath),
             ],
             cat_col,
             Stroke::NONE,
         ));
         // Whiskers
-        let whisker_stroke = Stroke::new(1.0, Color32::from_rgba_unmultiplied(15, 13, 28, 210));
-        let wx = ox + w * 0.618;
-        let wy = oy + h * 0.462 + breath;
+        let whisker_stroke = Stroke::new(1.0, Color32::from_rgba_unmultiplied(18, 16, 34, 215));
+        let wx = ox + w * 0.620;
+        let wy = oy + h * 0.438 + breath;
         for i in -1..=1 {
             painter.line_segment(
                 [
-                    Pos2::new(wx, wy + i as f32 * 3.0),
-                    Pos2::new(wx - 16.0, wy + i as f32 * 6.0 + 1.0),
+                    Pos2::new(wx, wy + i as f32 * 2.8),
+                    Pos2::new(wx - 17.0, wy + i as f32 * 5.8 + 1.0),
                 ],
                 whisker_stroke,
             );
@@ -448,14 +523,20 @@ impl SceneRenderer {
             Color32::from_rgb(13, 12, 28),
         );
         painter.rect_stroke(
-            Rect::from_min_size(Pos2::new(ox - 10.0, oy - 8.0), Vec2::new(w * 0.085, h * 0.21)),
+            Rect::from_min_size(
+                Pos2::new(ox - 10.0, oy - 8.0),
+                Vec2::new(w * 0.085, h * 0.21),
+            ),
             0.0,
             Stroke::new(8.0, Color32::from_rgb(25, 23, 48)),
             egui::StrokeKind::Middle,
         );
         // Open left sash glass reflection
         painter.rect_filled(
-            Rect::from_min_max(Pos2::new(win_l - w * 0.032, oy + h * 0.04), Pos2::new(win_l - 4.0, oy + h * 0.96)),
+            Rect::from_min_max(
+                Pos2::new(win_l - w * 0.032, oy + h * 0.04),
+                Pos2::new(win_l - 4.0, oy + h * 0.96),
+            ),
             0.0,
             Color32::from_rgba_unmultiplied(112, 118, 198, 28),
         );
@@ -466,12 +547,18 @@ impl SceneRenderer {
             Color32::from_rgb(11, 10, 24),
         );
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(win_r + 10.0, oy + h * 0.04), Vec2::new(w * 0.048, h * 0.92)),
+            Rect::from_min_size(
+                Pos2::new(win_r + 10.0, oy + h * 0.04),
+                Vec2::new(w * 0.048, h * 0.92),
+            ),
             0.0,
             Color32::from_rgba_unmultiplied(105, 115, 200, 24),
         );
         painter.rect_filled(
-            Rect::from_min_size(Pos2::new(win_r + w * 0.068, oy + h * 0.48), Vec2::new(7.0, h * 0.10)),
+            Rect::from_min_size(
+                Pos2::new(win_r + w * 0.068, oy + h * 0.48),
+                Vec2::new(7.0, h * 0.10),
+            ),
             2.0,
             Color32::from_rgb(32, 29, 59),
         );
@@ -531,7 +618,10 @@ impl SceneRenderer {
                     }
                     painter.rect_filled(
                         Rect::from_min_size(
-                            Pos2::new(bx + 10.0 + c as f32 * (bw / 4.6), by + 22.0 + r as f32 * 24.0),
+                            Pos2::new(
+                                bx + 10.0 + c as f32 * (bw / 4.6),
+                                by + 22.0 + r as f32 * 24.0,
+                            ),
                             Vec2::new(7.0, 10.0),
                         ),
                         1.0,
@@ -569,9 +659,17 @@ impl SceneRenderer {
         }
 
         let moon = Pos2::new(ox + w * 0.26, oy + h * 0.24);
-        painter.circle_filled(moon, 72.0, Color32::from_rgba_unmultiplied(200, 220, 255, 26));
+        painter.circle_filled(
+            moon,
+            72.0,
+            Color32::from_rgba_unmultiplied(200, 220, 255, 26),
+        );
         painter.circle_filled(moon, 24.0, Color32::from_rgb(238, 244, 255));
-        painter.circle_filled(moon + Vec2::new(9.0, -5.0), 21.0, Color32::from_rgb(11, 20, 44));
+        painter.circle_filled(
+            moon + Vec2::new(9.0, -5.0),
+            21.0,
+            Color32::from_rgb(11, 20, 44),
+        );
 
         // Occasional shooting star
         let cycle = t % 9.0;
@@ -581,7 +679,10 @@ impl SceneRenderer {
             let sy = oy + h * (0.12 + p * 0.20);
             painter.line_segment(
                 [Pos2::new(sx, sy), Pos2::new(sx + 70.0, sy - 42.0)],
-                Stroke::new(2.0, Color32::from_rgba_unmultiplied(255, 255, 255, ((1.0 - p) * 220.0) as u8)),
+                Stroke::new(
+                    2.0,
+                    Color32::from_rgba_unmultiplied(255, 255, 255, ((1.0 - p) * 220.0) as u8),
+                ),
             );
         }
 
@@ -631,8 +732,16 @@ impl SceneRenderer {
             Color32::from_rgb(226, 154, 98),
         );
         let sun = Pos2::new(ox + w * 0.5, oy + h * 0.72);
-        painter.circle_filled(sun, w * 0.22, Color32::from_rgba_unmultiplied(255, 224, 165, 58));
-        painter.circle_filled(sun, w * 0.09, Color32::from_rgba_unmultiplied(255, 238, 195, 115));
+        painter.circle_filled(
+            sun,
+            w * 0.22,
+            Color32::from_rgba_unmultiplied(255, 224, 165, 58),
+        );
+        painter.circle_filled(
+            sun,
+            w * 0.09,
+            Color32::from_rgba_unmultiplied(255, 238, 195, 115),
+        );
 
         for i in 0..34 {
             let mx = ox + ((i as f32 * 97.3 + (t * 0.4 + i as f32).sin() * 30.0).rem_euclid(w));
@@ -682,10 +791,36 @@ impl SceneRenderer {
             let alpha = (d.alpha * intensity * 255.0).clamp(10.0, 180.0) as u8;
             painter.line_segment(
                 [Pos2::new(x, y), Pos2::new(x + dx, y + dy)],
-                Stroke::new(d.width, Color32::from_rgba_unmultiplied(196, 206, 245, alpha)),
+                Stroke::new(
+                    d.width,
+                    Color32::from_rgba_unmultiplied(196, 206, 245, alpha),
+                ),
             );
         }
     }
+}
+
+fn paint_radial_glow(painter: &Painter, center: Pos2, radius: f32, inner: Color32) {
+    if radius <= 1.0 || inner.a() == 0 {
+        return;
+    }
+    const SEGMENTS: u32 = 28;
+    let mut mesh = Mesh::default();
+    mesh.colored_vertex(center, inner);
+    let edge = Color32::from_rgba_unmultiplied(inner.r(), inner.g(), inner.b(), 0);
+    for i in 0..SEGMENTS {
+        let angle = (i as f32 / SEGMENTS as f32) * std::f32::consts::TAU;
+        let p = Pos2::new(
+            center.x + angle.cos() * radius,
+            center.y + angle.sin() * radius,
+        );
+        mesh.colored_vertex(p, edge);
+    }
+    for i in 0..SEGMENTS {
+        let next = if i + 1 == SEGMENTS { 1 } else { i + 2 };
+        mesh.add_triangle(0, i + 1, next);
+    }
+    painter.add(Shape::mesh(mesh));
 }
 
 fn paint_vertical_gradient(
@@ -722,14 +857,20 @@ fn paint_soft_vignette(painter: &Painter, rect: Rect, strength: f32) {
     let band_h = rect.height() * 0.18;
     paint_vertical_gradient(
         painter,
-        Rect::from_min_max(rect.left_top(), Pos2::new(rect.right(), rect.top() + band_h)),
+        Rect::from_min_max(
+            rect.left_top(),
+            Pos2::new(rect.right(), rect.top() + band_h),
+        ),
         edge,
         Color32::from_rgba_unmultiplied(4, 5, 12, a / 3),
         clear,
     );
     paint_vertical_gradient(
         painter,
-        Rect::from_min_max(Pos2::new(rect.left(), rect.bottom() - band_h), rect.right_bottom()),
+        Rect::from_min_max(
+            Pos2::new(rect.left(), rect.bottom() - band_h),
+            rect.right_bottom(),
+        ),
         clear,
         Color32::from_rgba_unmultiplied(4, 5, 12, a / 3),
         edge,

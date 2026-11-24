@@ -198,7 +198,9 @@ impl AudioEngine {
 
     pub fn select_station(&mut self, station_id: &str, auto_play: bool) {
         self.local_stream = None;
-        let _ = self.tx.send(AudioCmd::SelectStation(station_id.to_string()));
+        let _ = self
+            .tx
+            .send(AudioCmd::SelectStation(station_id.to_string()));
         if auto_play {
             self.set_playing(true);
         }

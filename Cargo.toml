@@ -1,8 +1,14 @@
 [package]
 name = "kissa"
 version = "0.2.0-alpha.1"
-description = "Kissa — Ultra-low-resource, pure-Rust native lofi desktop café with dynamic WebAssembly plugins (zero WebView)"
+description = "Whisper-quiet, 100% pure-Rust native lofi desktop café with dynamic WebAssembly plugins (zero WebView)"
 authors = ["Ash2sh"]
+license = "MIT"
+repository = "https://github.com/Ash2sh/kissa-lofi"
+homepage = "https://github.com/Ash2sh/kissa-lofi"
+readme = "README.md"
+keywords = ["lofi", "music", "egui", "wasm", "desktop"]
+categories = ["multimedia::audio", "gui"]
 edition = "2021"
 
 [dependencies]

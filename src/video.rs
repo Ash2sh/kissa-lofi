@@ -136,9 +136,9 @@ impl BackgroundMedia {
         .stdout(Stdio::piped())
         .stderr(Stdio::null());
 
-        let mut child: Child = cmd.spawn().map_err(|e| {
-            format!("Local video requires ffmpeg in PATH (not found: {e})")
-        })?;
+        let mut child: Child = cmd
+            .spawn()
+            .map_err(|e| format!("Local video requires ffmpeg in PATH (not found: {e})"))?;
 
         let mut stdout = child
             .stdout
@@ -202,7 +202,8 @@ impl BackgroundMedia {
         if let Some(tex) = &mut self.texture {
             tex.set(color_img, TextureOptions::LINEAR);
         } else {
-            self.texture = Some(ctx.load_texture("kissa-bg-media", color_img, TextureOptions::LINEAR));
+            self.texture =
+                Some(ctx.load_texture("kissa-bg-media", color_img, TextureOptions::LINEAR));
         }
     }
 

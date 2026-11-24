@@ -33,7 +33,13 @@ impl LocalStorage {
         let sounds_dir = app_data_dir.join("sounds");
         let plugins_dir = app_data_dir.join("plugins");
 
-        for dir in [&app_data_dir, &music_dir, &visuals_dir, &sounds_dir, &plugins_dir] {
+        for dir in [
+            &app_data_dir,
+            &music_dir,
+            &visuals_dir,
+            &sounds_dir,
+            &plugins_dir,
+        ] {
             fs::create_dir_all(dir)
                 .map_err(|e| format!("Failed to create directory {}: {e}", dir.display()))?;
         }
@@ -73,8 +79,7 @@ impl LocalStorage {
     pub fn save_config(&self, config: &AppConfig) -> Result<(), String> {
         let raw = serde_json::to_string_pretty(config)
             .map_err(|e| format!("Failed to serialize config: {e}"))?;
-        fs::write(self.config_path(), raw)
-            .map_err(|e| format!("Failed to write config: {e}"))
+        fs::write(self.config_path(), raw).map_err(|e| format!("Failed to write config: {e}"))
     }
 
     pub fn load_scenes(&self) -> Vec<ScenePreset> {
@@ -95,8 +100,7 @@ impl LocalStorage {
         let user_only: Vec<&ScenePreset> = all_scenes.iter().filter(|s| !s.builtin).collect();
         let raw = serde_json::to_string_pretty(&user_only)
             .map_err(|e| format!("Failed to serialize scenes: {e}"))?;
-        fs::write(self.scenes_path(), raw)
-            .map_err(|e| format!("Failed to write scenes: {e}"))
+        fs::write(self.scenes_path(), raw).map_err(|e| format!("Failed to write scenes: {e}"))
     }
 
     pub fn load_history(&self) -> Vec<HistoryEntry> {
@@ -109,11 +113,14 @@ impl LocalStorage {
     }
 
     pub fn save_history(&self, entries: &[HistoryEntry]) -> Result<(), String> {
-        let trimmed = if entries.len() > 80 { &entries[..80] } else { entries };
+        let trimmed = if entries.len() > 80 {
+            &entries[..80]
+        } else {
+            entries
+        };
         let raw = serde_json::to_string_pretty(trimmed)
             .map_err(|e| format!("Failed to serialize history: {e}"))?;
-        fs::write(self.history_path(), raw)
-            .map_err(|e| format!("Failed to write history: {e}"))
+        fs::write(self.history_path(), raw).map_err(|e| format!("Failed to write history: {e}"))
     }
 
     pub fn directories_snapshot(&self, config: &AppConfig) -> LibraryDirectories {
@@ -166,7 +173,11 @@ impl LocalStorage {
             if seen.contains(&key) {
                 continue;
             }
-            let Some(ext) = p.extension().and_then(|e| e.to_str()).map(|s| s.to_ascii_lowercase()) else {
+            let Some(ext) = p
+                .extension()
+                .and_then(|e| e.to_str())
+                .map(|s| s.to_ascii_lowercase())
+            else {
                 continue;
             };
             if VIDEO_EXTS.contains(&ext.as_str()) {
@@ -187,8 +198,8 @@ impl LocalStorage {
             }
         }
 
-        music.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
-        visuals.sort_by(|a, b| a.title.to_lowercase().cmp(&b.title.to_lowercase()));
+        music.sort_by_key(|a| a.title.to_lowercase());
+        visuals.sort_by_key(|a| a.title.to_lowercase());
 
         LibrarySnapshot {
             music,
@@ -350,7 +361,9 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
             id: "rainy-window-chill".to_string(),
             name: "Rainy Window Cat".to_string(),
             mood: "CHILLING".to_string(),
-            description: "Midnight rain outside an open apartment window with a quiet silhouette companion.".to_string(),
+            description:
+                "Midnight rain outside an open apartment window with a quiet silhouette companion."
+                    .to_string(),
             builtin: true,
             visual: VisualSource {
                 kind: "canvas".to_string(),
@@ -373,7 +386,9 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
             id: "rain-study-session".to_string(),
             name: "Rain & Vinyl Study".to_string(),
             mood: "FOCUSING".to_string(),
-            description: "Gentle rain on glass, warm tape EQ, and dusty vinyl crackle for deep focus.".to_string(),
+            description:
+                "Gentle rain on glass, warm tape EQ, and dusty vinyl crackle for deep focus."
+                    .to_string(),
             builtin: true,
             visual: VisualSource {
                 kind: "canvas".to_string(),
@@ -403,7 +418,9 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
             id: "neon-rain-skyline".to_string(),
             name: "Neon Rain Skyline".to_string(),
             mood: "DRIFTING".to_string(),
-            description: "Distant city towers shimmering through late-night storm clouds and soft thunder.".to_string(),
+            description:
+                "Distant city towers shimmering through late-night storm clouds and soft thunder."
+                    .to_string(),
             builtin: true,
             visual: VisualSource {
                 kind: "canvas".to_string(),
@@ -433,7 +450,9 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
             id: "warm-hearth-dusk".to_string(),
             name: "Warm Dusk Hearth".to_string(),
             mood: "UNWINDING".to_string(),
-            description: "Golden dusk clouds, hearth crackle, and warm mellow keys for winding down.".to_string(),
+            description:
+                "Golden dusk clouds, hearth crackle, and warm mellow keys for winding down."
+                    .to_string(),
             builtin: true,
             visual: VisualSource {
                 kind: "canvas".to_string(),

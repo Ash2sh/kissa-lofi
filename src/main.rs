@@ -12,7 +12,10 @@ use ui::{KissaApp, StartupOverrides};
 
 fn load_app_icon() -> Option<egui::IconData> {
     let bytes = include_bytes!("../assets/kissa-icon.png");
-    let img = image::load_from_memory(bytes).ok()?.thumbnail(64, 64).to_rgba8();
+    let img = image::load_from_memory(bytes)
+        .ok()?
+        .thumbnail(64, 64)
+        .to_rgba8();
     let (width, height) = img.dimensions();
     Some(egui::IconData {
         rgba: img.into_raw(),
@@ -28,6 +31,7 @@ fn parse_startup_overrides() -> StartupOverrides {
         auto_play: false,
         rain_level: None,
         apply_wasm_tape: false,
+        screenshot_path: None,
     };
     let mut args = std::env::args().skip(1);
     while let Some(arg) = args.next() {
@@ -49,6 +53,11 @@ fn parse_startup_overrides() -> StartupOverrides {
                 }
             }
             "--wasm-tape" => ov.apply_wasm_tape = true,
+            "--screenshot" => {
+                if let Some(p) = args.next() {
+                    ov.screenshot_path = Some(PathBuf::from(p));
+                }
+            }
             _ => {}
         }
     }

@@ -605,7 +605,9 @@ mod tests {
         assert_eq!(trait_obj.dock_module().unwrap().label, "Tape");
         let panel = trait_obj.render_panel().unwrap().unwrap();
         assert_eq!(panel.title, "Tape Lab");
-        let res = trait_obj.invoke_action("apply-tape", 0.0, [0.0; 5]).unwrap();
+        let res = trait_obj
+            .invoke_action("apply-tape", 0.0, [0.0; 5])
+            .unwrap();
         assert!(!res.commands.is_empty());
         assert_eq!(
             trait_obj
@@ -620,12 +622,13 @@ mod tests {
 
     #[test]
     fn plugin_manager_registers_10_builtin_dock_plugins_plus_wasm() {
-        let temp_dir = std::env::temp_dir().join(format!("kissa_native_wasm_{}", std::process::id()));
+        let temp_dir =
+            std::env::temp_dir().join(format!("kissa_native_wasm_{}", std::process::id()));
         let _ = fs::remove_dir_all(&temp_dir);
         PluginManager::ensure_starter_wasm_plugins(&temp_dir).unwrap();
 
         let mut mgr = PluginManager::new(&[]);
-        mgr.reload(&[temp_dir.clone()]);
+        mgr.reload(std::slice::from_ref(&temp_dir));
         let snap = mgr.snapshot();
         assert!(snap.load_errors.is_empty());
         assert_eq!(snap.dock_modules.len(), 11);

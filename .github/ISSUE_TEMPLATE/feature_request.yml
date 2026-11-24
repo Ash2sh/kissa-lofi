@@ -1,0 +1,26 @@
+name: Feature Request
+description: Propose a new feature, scene, audio capability, or plugin hook.
+title: "[Feature]: "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem or use case does this solve?
+      description: Describe how this improves the daily Kissa listening or focus experience.
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed Solution
+      description: How should this work from the user's perspective? Could it be implemented as a built-in plugin or external Wasm plugin?
+    validations:
+      required: true
+  - type: checkboxes
+    id: invariants
+    attributes:
+      label: Alignment with Kissa's Philosophy
+      options:
+        - label: Works offline / local-first without requiring an account or cloud service
+        - label: Keeps RAM and CPU footprint minimal (no WebView / browser runtime)

@@ -1,0 +1,33 @@
+name: WebAssembly Plugin Showcase
+description: Share a community .wasm or .wat dock plugin you built for Kissa!
+title: "[Plugin]: "
+labels: ["plugin"]
+body:
+  - type: input
+    id: plugin_name
+    attributes:
+      label: Plugin Name
+      placeholder: "e.g. Rainy Tape Warmth"
+    validations:
+      required: true
+  - type: input
+    id: repo_url
+    attributes:
+      label: Repository or Download URL
+      placeholder: "https://github.com/..."
+    validations:
+      required: true
+  - type: textarea
+    id: summary
+    attributes:
+      label: What does your plugin do?
+      description: Describe its dock button, controls, DSP effect, or event hooks.
+    validations:
+      required: true
+  - type: input
+    id: abi
+    attributes:
+      label: ABI Version Tested
+      placeholder: "ABI v1 (Kissa v0.2.0-alpha.1)"
+    validations:
+      required: true

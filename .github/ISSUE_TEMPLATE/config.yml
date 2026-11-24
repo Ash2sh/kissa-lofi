@@ -1,0 +1,8 @@
+blank_issues_enabled: true
+contact_links:
+  - name: WebAssembly Plugin ABI Docs
+    url: https://github.com/Ash2sh/kissa-lofi/blob/main/plugins/README.md
+    about: Learn how to build and install custom .wasm / .wat dock plugins for Kissa.
+  - name: Contributing Guide
+    url: https://github.com/Ash2sh/kissa-lofi/blob/main/CONTRIBUTING.md
+    about: Setup instructions, codebase map, and PR checklist.

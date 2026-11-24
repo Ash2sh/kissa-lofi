@@ -2,8 +2,8 @@ pub mod builtin;
 pub mod wasm_runtime;
 
 use crate::models::{
-    DockModuleSpec, EqPreset, PluginActionResponse, PluginEqTransformResult,
-    PluginMetadata, PluginPanelView, PluginRegistrySnapshot,
+    DockModuleSpec, EqPreset, PluginActionResponse, PluginEqTransformResult, PluginMetadata,
+    PluginPanelView, PluginRegistrySnapshot,
 };
 use std::collections::HashSet;
 use std::fs;
@@ -107,11 +107,8 @@ impl PluginManager {
             self.plugins.push(builtin_plugin);
         }
 
-        let mut seen_ids: HashSet<String> = self
-            .plugins
-            .iter()
-            .map(|p| p.id().to_string())
-            .collect();
+        let mut seen_ids: HashSet<String> =
+            self.plugins.iter().map(|p| p.id().to_string()).collect();
 
         for dir in plugin_dirs {
             if !dir.exists() {

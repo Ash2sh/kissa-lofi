@@ -175,7 +175,7 @@ impl LofiSynth {
         }
 
         // 5. Whisper hi-hat
-        if step_in_bar % 2 == 0 || self.rand_f32() < 0.72 {
+        if step_in_bar.is_multiple_of(2) || self.rand_f32() < 0.72 {
             self.hat_active = true;
             self.hat_age = 0.0;
         }

@@ -159,13 +159,13 @@ impl AmbientMixer {
         // 6: Forest Crickets
         if self.levels[6] > 0.005 {
             self.cricket_timer = (self.cricket_timer + dt) % 1.4;
-            let chirp = if self.cricket_timer < 0.22 && ((self.cricket_timer * 28.0) as i32) % 2 == 0
-            {
-                self.cricket_phase = (self.cricket_phase + 4320.0 * dt) % 1.0;
-                (self.cricket_phase * TAU).sin() * 0.045
-            } else {
-                0.0
-            };
+            let chirp =
+                if self.cricket_timer < 0.22 && ((self.cricket_timer * 28.0) as i32) % 2 == 0 {
+                    self.cricket_phase = (self.cricket_phase + 4320.0 * dt) % 1.0;
+                    (self.cricket_phase * TAU).sin() * 0.045
+                } else {
+                    0.0
+                };
             let s = (pink * 0.08 + chirp) * self.levels[6] * 0.7;
             l += s;
             r += s;

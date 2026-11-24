@@ -34,7 +34,10 @@ pub fn show_active_popover(ctx: &egui::Context, app: &mut KissaApp) {
         .show(ctx, |ui| {
             Frame::new()
                 .fill(Color32::from_rgba_unmultiplied(14, 15, 22, 240))
-                .stroke(Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 28)))
+                .stroke(Stroke::new(
+                    1.0,
+                    Color32::from_rgba_unmultiplied(255, 255, 255, 28),
+                ))
                 .corner_radius(CornerRadius::same(16))
                 .inner_margin(Margin::same(16))
                 .shadow(egui::Shadow {
@@ -81,18 +84,20 @@ pub fn show_active_popover(ctx: &egui::Context, app: &mut KissaApp) {
                             if panel_header(ui, title, sub) {
                                 close_requested = true;
                             }
-                            ScrollArea::vertical().max_height(390.0).show(ui, |ui| match id.as_str() {
-                                "eq" => render_eq(ui, app),
-                                "music" => render_music(ui, app),
-                                "visuals" => render_visuals(ui, app),
-                                "sounds" => render_sounds(ui, app),
-                                "scenes" => render_scenes(ui, app),
-                                "history" => render_history(ui, app),
-                                "share" => render_share(ui, app),
-                                "keys" => render_keys(ui, app),
-                                "focus" => render_focus(ui, app),
-                                "sleep" => render_sleep(ui, app),
-                                _ => {}
+                            ScrollArea::vertical().max_height(390.0).show(ui, |ui| {
+                                match id.as_str() {
+                                    "eq" => render_eq(ui, app),
+                                    "music" => render_music(ui, app),
+                                    "visuals" => render_visuals(ui, app),
+                                    "sounds" => render_sounds(ui, app),
+                                    "scenes" => render_scenes(ui, app),
+                                    "history" => render_history(ui, app),
+                                    "share" => render_share(ui, app),
+                                    "keys" => render_keys(ui, app),
+                                    "focus" => render_focus(ui, app),
+                                    "sleep" => render_sleep(ui, app),
+                                    _ => {}
+                                }
                             });
                         }
                     }
@@ -106,16 +111,40 @@ pub fn show_active_popover(ctx: &egui::Context, app: &mut KissaApp) {
 
 fn builtin_panel_meta(id: &str) -> (&'static str, &'static str) {
     match id {
-        "eq" => ("Equalizer & Tape Filter", "5-band native Rust parametric EQ + Wasm DSP hooks"),
-        "music" => ("Music & Local Library", "Procedural Rust lofi stations & streaming local audio"),
-        "visuals" => ("Visual Backgrounds", "Native GPU Canvas scenes + local photo/video wallpapers"),
-        "sounds" => ("Ambient Soundscapes", "8-layer procedural Rust ambient mixer"),
-        "scenes" => ("Atmosphere Scenes", "One-click snapshots combining visual, EQ, ambience & station"),
+        "eq" => (
+            "Equalizer & Tape Filter",
+            "5-band native Rust parametric EQ + Wasm DSP hooks",
+        ),
+        "music" => (
+            "Music & Local Library",
+            "Procedural Rust lofi stations & streaming local audio",
+        ),
+        "visuals" => (
+            "Visual Backgrounds",
+            "Native GPU Canvas scenes + local photo/video wallpapers",
+        ),
+        "sounds" => (
+            "Ambient Soundscapes",
+            "8-layer procedural Rust ambient mixer",
+        ),
+        "scenes" => (
+            "Atmosphere Scenes",
+            "One-click snapshots combining visual, EQ, ambience & station",
+        ),
         "history" => ("Listening History", "Stored privately on your machine"),
-        "share" => ("Share & Import Presets", "Portable offline atmosphere codes"),
+        "share" => (
+            "Share & Import Presets",
+            "Portable offline atmosphere codes",
+        ),
         "keys" => ("Keyboard Shortcuts", "Quick distraction-free control"),
-        "focus" => ("Focus Timer", "Pomodoro rhythm with chime & local session checklist"),
-        "sleep" => ("Sleep Timer", "Gradual 30-second audio fade-out & automatic pause"),
+        "focus" => (
+            "Focus Timer",
+            "Pomodoro rhythm with chime & local session checklist",
+        ),
+        "sleep" => (
+            "Sleep Timer",
+            "Gradual 30-second audio fade-out & automatic pause",
+        ),
         _ => ("Module", ""),
     }
 }
@@ -124,7 +153,12 @@ fn panel_header(ui: &mut Ui, title: &str, subtitle: &str) -> bool {
     let mut closed = false;
     ui.horizontal(|ui| {
         ui.vertical(|ui| {
-            ui.label(RichText::new(title).size(15.0).strong().color(Color32::WHITE));
+            ui.label(
+                RichText::new(title)
+                    .size(15.0)
+                    .strong()
+                    .color(Color32::WHITE),
+            );
             ui.label(
                 RichText::new(subtitle)
                     .size(11.5)
@@ -178,13 +212,19 @@ fn render_plugin_manager(ui: &mut Ui, app: &mut KissaApp) {
             .filter(|p| p.kind == PluginKind::Wasm)
             .count();
         if ui
-            .selectable_label(app.plugin_mgr_tab == 0, format!("Built-in Dock Plugins ({builtin_cnt})"))
+            .selectable_label(
+                app.plugin_mgr_tab == 0,
+                format!("Built-in Dock Plugins ({builtin_cnt})"),
+            )
             .clicked()
         {
             app.plugin_mgr_tab = 0;
         }
         if ui
-            .selectable_label(app.plugin_mgr_tab == 1, format!("External Wasm Plugins ({wasm_cnt})"))
+            .selectable_label(
+                app.plugin_mgr_tab == 1,
+                format!("External Wasm Plugins ({wasm_cnt})"),
+            )
             .clicked()
         {
             app.plugin_mgr_tab = 1;
@@ -200,7 +240,10 @@ fn render_plugin_manager(ui: &mut Ui, app: &mut KissaApp) {
                 .color(Color32::from_rgb(165, 175, 195)),
         );
         ui.add_space(6.0);
-        for p in plugins.into_iter().filter(|p| p.kind == PluginKind::Builtin) {
+        for p in plugins
+            .into_iter()
+            .filter(|p| p.kind == PluginKind::Builtin)
+        {
             card_frame(false).show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.vertical(|ui| {
@@ -247,10 +290,13 @@ fn render_plugin_manager(ui: &mut Ui, app: &mut KissaApp) {
         });
         ui.add_space(4.0);
         ui.label(
-            RichText::new(format!("Plugins dir: {}", app.library.directories.default_plugins_dir))
-                .monospace()
-                .size(10.5)
-                .color(Color32::from_rgb(145, 155, 175)),
+            RichText::new(format!(
+                "Plugins dir: {}",
+                app.library.directories.default_plugins_dir
+            ))
+            .monospace()
+            .size(10.5)
+            .color(Color32::from_rgb(145, 155, 175)),
         );
         ui.add_space(6.0);
 
@@ -303,8 +349,16 @@ fn render_external_plugin(ui: &mut Ui, app: &mut KissaApp, plugin_id: &str) {
         match widget {
             PluginWidget::Text { label, value } => {
                 card_frame(false).show(ui, |ui| {
-                    ui.label(RichText::new(label.to_uppercase()).size(10.0).color(Color32::from_rgb(145, 155, 175)));
-                    ui.label(RichText::new(value).size(12.0).color(Color32::from_rgb(220, 226, 240)));
+                    ui.label(
+                        RichText::new(label.to_uppercase())
+                            .size(10.0)
+                            .color(Color32::from_rgb(145, 155, 175)),
+                    );
+                    ui.label(
+                        RichText::new(value)
+                            .size(12.0)
+                            .color(Color32::from_rgb(220, 226, 240)),
+                    );
                 });
                 ui.add_space(6.0);
             }
@@ -312,8 +366,17 @@ fn render_external_plugin(ui: &mut Ui, app: &mut KissaApp, plugin_id: &str) {
                 ui.columns(items.len().max(1), |cols| {
                     for (idx, item) in items.iter().enumerate() {
                         card_frame(false).show(&mut cols[idx], |ui| {
-                            ui.label(RichText::new(&item.label).size(10.5).color(Color32::from_rgb(145, 155, 175)));
-                            ui.label(RichText::new(&item.value).strong().size(13.0).color(Color32::WHITE));
+                            ui.label(
+                                RichText::new(&item.label)
+                                    .size(10.5)
+                                    .color(Color32::from_rgb(145, 155, 175)),
+                            );
+                            ui.label(
+                                RichText::new(&item.value)
+                                    .strong()
+                                    .size(13.0)
+                                    .color(Color32::WHITE),
+                            );
                         });
                     }
                 });
@@ -341,14 +404,20 @@ fn render_external_plugin(ui: &mut Ui, app: &mut KissaApp, plugin_id: &str) {
             }
             PluginWidget::Actions { title, buttons } => {
                 if let Some(t) = title {
-                    ui.label(RichText::new(t.to_uppercase()).size(10.5).color(Color32::from_rgb(145, 155, 175)));
+                    ui.label(
+                        RichText::new(t.to_uppercase())
+                            .size(10.5)
+                            .color(Color32::from_rgb(145, 155, 175)),
+                    );
                     ui.add_space(4.0);
                 }
                 ui.horizontal_wrapped(|ui| {
                     for b in buttons {
                         let btn = if b.style == "accent" {
-                            egui::Button::new(RichText::new(&b.label).color(Color32::from_rgb(186, 230, 253)))
-                                .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 52))
+                            egui::Button::new(
+                                RichText::new(&b.label).color(Color32::from_rgb(186, 230, 253)),
+                            )
+                            .fill(Color32::from_rgba_unmultiplied(56, 189, 248, 52))
                         } else {
                             egui::Button::new(&b.label)
                         };
@@ -438,7 +507,11 @@ fn render_eq(ui: &mut Ui, app: &mut KissaApp) {
         .collect();
     if !dsp_plugins.is_empty() {
         ui.add_space(8.0);
-        ui.label(RichText::new("WASM EQ DSP PLUGINS").size(10.5).color(Color32::from_rgb(145, 155, 175)));
+        ui.label(
+            RichText::new("WASM EQ DSP PLUGINS")
+                .size(10.5)
+                .color(Color32::from_rgb(145, 155, 175)),
+        );
         ui.horizontal_wrapped(|ui| {
             for p in dsp_plugins {
                 if ui.button(format!("Apply {} (Wasm)", p.name)).clicked() {
@@ -462,7 +535,10 @@ fn render_eq(ui: &mut Ui, app: &mut KissaApp) {
 // --- 2. Music ---
 fn render_music(ui: &mut Ui, app: &mut KissaApp) {
     ui.horizontal(|ui| {
-        if ui.selectable_label(app.music_tab == 0, "Lofi Stations").clicked() {
+        if ui
+            .selectable_label(app.music_tab == 0, "Lofi Stations")
+            .clicked()
+        {
             app.music_tab = 0;
         }
         if ui
@@ -486,15 +562,22 @@ fn render_music(ui: &mut Ui, app: &mut KissaApp) {
                     let resp = card_frame(active)
                         .show(&mut cols[i], |ui| {
                             ui.horizontal(|ui| {
-                                let col = Color32::from_rgb(st.accent_rgb[0], st.accent_rgb[1], st.accent_rgb[2]);
+                                let col = Color32::from_rgb(
+                                    st.accent_rgb[0],
+                                    st.accent_rgb[1],
+                                    st.accent_rgb[2],
+                                );
                                 ui.label(RichText::new(st.mood).size(10.0).strong().color(col));
-                                ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                    ui.label(
-                                        RichText::new(format!("{} BPM", st.bpm as i32))
-                                            .size(10.5)
-                                            .color(Color32::from_rgb(155, 165, 185)),
-                                    );
-                                });
+                                ui.with_layout(
+                                    egui::Layout::right_to_left(egui::Align::Center),
+                                    |ui| {
+                                        ui.label(
+                                            RichText::new(format!("{} BPM", st.bpm as i32))
+                                                .size(10.5)
+                                                .color(Color32::from_rgb(155, 165, 185)),
+                                        );
+                                    },
+                                );
                             });
                             ui.label(RichText::new(st.name).strong().color(Color32::WHITE));
                             ui.label(
@@ -528,10 +611,17 @@ fn render_music(ui: &mut Ui, app: &mut KissaApp) {
                         app.config.shuffle = !app.config.shuffle;
                         app.save_config();
                     }
-                    if ui.button(format!("Repeat: {}", app.config.repeat_mode)).clicked() {
+                    if ui
+                        .button(format!("Repeat: {}", app.config.repeat_mode))
+                        .clicked()
+                    {
                         app.cycle_repeat();
                     }
-                    ui.label(RichText::new(format_clock(cur as u32)).monospace().size(11.0));
+                    ui.label(
+                        RichText::new(format_clock(cur as u32))
+                            .monospace()
+                            .size(11.0),
+                    );
                     let mut pos = cur;
                     if ui
                         .add(egui::Slider::new(&mut pos, 0.0..=dur.max(1.0)).show_value(false))
@@ -539,14 +629,21 @@ fn render_music(ui: &mut Ui, app: &mut KissaApp) {
                     {
                         app.audio.seek_local(pos);
                     }
-                    ui.label(RichText::new(format_clock(dur as u32)).monospace().size(11.0));
+                    ui.label(
+                        RichText::new(format_clock(dur as u32))
+                            .monospace()
+                            .size(11.0),
+                    );
                 });
             });
             ui.add_space(6.0);
         }
 
         ui.horizontal(|ui| {
-            ui.add(egui::TextEdit::singleline(&mut app.music_search).hint_text("Search local music..."));
+            ui.add(
+                egui::TextEdit::singleline(&mut app.music_search)
+                    .hint_text("Search local music..."),
+            );
             if ui.button("+ Files").clicked() {
                 app.pick_local_files("music");
             }
@@ -559,10 +656,13 @@ fn render_music(ui: &mut Ui, app: &mut KissaApp) {
         });
         ui.add_space(4.0);
         ui.label(
-            RichText::new(format!("Music folder: {}", app.library.directories.default_music_dir))
-                .monospace()
-                .size(10.5)
-                .color(Color32::from_rgb(145, 155, 175)),
+            RichText::new(format!(
+                "Music folder: {}",
+                app.library.directories.default_music_dir
+            ))
+            .monospace()
+            .size(10.5)
+            .color(Color32::from_rgb(145, 155, 175)),
         );
         ui.add_space(6.0);
 
@@ -600,13 +700,16 @@ fn render_music(ui: &mut Ui, app: &mut KissaApp) {
                                     .color(Color32::from_rgb(155, 165, 185)),
                                 );
                             });
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                ui.label(
-                                    RichText::new(if active { "PLAYING" } else { "PLAY" })
-                                        .size(10.5)
-                                        .color(Color32::from_rgb(125, 211, 252)),
-                                );
-                            });
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    ui.label(
+                                        RichText::new(if active { "PLAYING" } else { "PLAY" })
+                                            .size(10.5)
+                                            .color(Color32::from_rgb(125, 211, 252)),
+                                    );
+                                },
+                            );
                         });
                     })
                     .response
@@ -623,7 +726,10 @@ fn render_music(ui: &mut Ui, app: &mut KissaApp) {
 // --- 3. Visuals ---
 fn render_visuals(ui: &mut Ui, app: &mut KissaApp) {
     ui.horizontal(|ui| {
-        if ui.selectable_label(app.visuals_tab == 0, "Canvas Scenes").clicked() {
+        if ui
+            .selectable_label(app.visuals_tab == 0, "Canvas Scenes")
+            .clicked()
+        {
             app.visuals_tab = 0;
         }
         if ui
@@ -635,7 +741,10 @@ fn render_visuals(ui: &mut Ui, app: &mut KissaApp) {
         {
             app.visuals_tab = 1;
         }
-        if ui.selectable_label(app.visuals_tab == 2, "Atmosphere & Power").clicked() {
+        if ui
+            .selectable_label(app.visuals_tab == 2, "Atmosphere & Power")
+            .clicked()
+        {
             app.visuals_tab = 2;
         }
     });
@@ -649,8 +758,10 @@ fn render_visuals(ui: &mut Ui, app: &mut KissaApp) {
                         app.config.visual.kind == "canvas" && app.config.visual.id == sc.id;
                     let resp = card_frame(active)
                         .show(&mut cols[i], |ui| {
-                            let (bar_r, _) =
-                                ui.allocate_exact_size(Vec2::new(ui.available_width(), 24.0), egui::Sense::hover());
+                            let (bar_r, _) = ui.allocate_exact_size(
+                                Vec2::new(ui.available_width(), 24.0),
+                                egui::Sense::hover(),
+                            );
                             ui.painter().rect_filled(bar_r, 6.0, sc.swatch[1]);
                             ui.label(RichText::new(sc.name).strong().color(Color32::WHITE));
                             ui.label(
@@ -682,10 +793,13 @@ fn render_visuals(ui: &mut Ui, app: &mut KissaApp) {
         });
         ui.add_space(4.0);
         ui.label(
-            RichText::new(format!("Visuals folder: {}", app.library.directories.default_visuals_dir))
-                .monospace()
-                .size(10.5)
-                .color(Color32::from_rgb(145, 155, 175)),
+            RichText::new(format!(
+                "Visuals folder: {}",
+                app.library.directories.default_visuals_dir
+            ))
+            .monospace()
+            .size(10.5)
+            .color(Color32::from_rgb(145, 155, 175)),
         );
         ui.add_space(6.0);
 
@@ -727,7 +841,10 @@ fn render_visuals(ui: &mut Ui, app: &mut KissaApp) {
     } else {
         let mut changed = false;
         changed |= ui
-            .add(egui::Slider::new(&mut app.config.visual_fx.rain_overlay, 0.0..=1.0).text("Rain Overlay"))
+            .add(
+                egui::Slider::new(&mut app.config.visual_fx.rain_overlay, 0.0..=1.0)
+                    .text("Rain Overlay"),
+            )
             .changed();
         changed |= ui
             .add(egui::Slider::new(&mut app.config.visual_fx.vignette, 0.0..=1.0).text("Vignette"))
@@ -736,7 +853,9 @@ fn render_visuals(ui: &mut Ui, app: &mut KissaApp) {
             .add(egui::Slider::new(&mut app.config.visual_fx.dim, 0.0..=0.75).text("Dimmer"))
             .changed();
         changed |= ui
-            .add(egui::Slider::new(&mut app.config.visual_fx.warm_tint, 0.0..=1.0).text("Warm Tint"))
+            .add(
+                egui::Slider::new(&mut app.config.visual_fx.warm_tint, 0.0..=1.0).text("Warm Tint"),
+            )
             .changed();
         ui.add_space(8.0);
         ui.horizontal(|ui| {
@@ -785,7 +904,10 @@ fn render_sounds(ui: &mut Ui, app: &mut KissaApp) {
                             }
                         });
                     });
-                    if ui.add(egui::Slider::new(&mut level, 0.0..=1.0).show_value(false)).changed() {
+                    if ui
+                        .add(egui::Slider::new(&mut level, 0.0..=1.0).show_value(false))
+                        .changed()
+                    {
                         app.set_ambience_level(ch.id, level);
                     }
                 });
@@ -809,21 +931,28 @@ fn render_scenes(ui: &mut Ui, app: &mut KissaApp) {
                 let resp = card_frame(active)
                     .show(&mut cols[i], |ui| {
                         ui.horizontal(|ui| {
-                            let col = Color32::from_rgb(sc.accent_rgb[0], sc.accent_rgb[1], sc.accent_rgb[2]);
+                            let col = Color32::from_rgb(
+                                sc.accent_rgb[0],
+                                sc.accent_rgb[1],
+                                sc.accent_rgb[2],
+                            );
                             ui.label(RichText::new(&sc.mood).size(10.0).strong().color(col));
-                            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                                if !sc.builtin {
-                                    if ui.small_button("Del").clicked() {
-                                        app.delete_scene(&sc.id);
+                            ui.with_layout(
+                                egui::Layout::right_to_left(egui::Align::Center),
+                                |ui| {
+                                    if !sc.builtin {
+                                        if ui.small_button("Del").clicked() {
+                                            app.delete_scene(&sc.id);
+                                        }
+                                    } else {
+                                        ui.label(
+                                            RichText::new("Curated")
+                                                .size(10.0)
+                                                .color(Color32::from_rgb(140, 150, 170)),
+                                        );
                                     }
-                                } else {
-                                    ui.label(
-                                        RichText::new("Curated")
-                                            .size(10.0)
-                                            .color(Color32::from_rgb(140, 150, 170)),
-                                    );
-                                }
-                            });
+                                },
+                            );
                         });
                         ui.label(RichText::new(&sc.name).strong().color(Color32::WHITE));
                         ui.label(
@@ -843,7 +972,11 @@ fn render_scenes(ui: &mut Ui, app: &mut KissaApp) {
     }
 
     ui.add_space(6.0);
-    ui.label(RichText::new("SAVE CURRENT ATMOSPHERE").size(10.5).color(Color32::from_rgb(145, 155, 175)));
+    ui.label(
+        RichText::new("SAVE CURRENT ATMOSPHERE")
+            .size(10.5)
+            .color(Color32::from_rgb(145, 155, 175)),
+    );
     ui.horizontal(|ui| {
         ui.add(egui::TextEdit::singleline(&mut app.new_scene_name).hint_text("Scene name..."));
         ui.add(
@@ -855,7 +988,14 @@ fn render_scenes(ui: &mut Ui, app: &mut KissaApp) {
             let name = app.new_scene_name.trim().to_string();
             let mood = app.new_scene_mood.trim().to_uppercase();
             app.new_scene_name.clear();
-            app.save_current_scene(name, if mood.is_empty() { "CUSTOM".into() } else { mood });
+            app.save_current_scene(
+                name,
+                if mood.is_empty() {
+                    "CUSTOM".into()
+                } else {
+                    mood
+                },
+            );
         }
     });
 }
@@ -864,8 +1004,10 @@ fn render_scenes(ui: &mut Ui, app: &mut KissaApp) {
 fn render_history(ui: &mut Ui, app: &mut KissaApp) {
     if app.history.is_empty() {
         ui.label(
-            RichText::new("Your recent stations, local tracks, and scenes will appear here locally.")
-                .color(Color32::from_rgb(155, 165, 185)),
+            RichText::new(
+                "Your recent stations, local tracks, and scenes will appear here locally.",
+            )
+            .color(Color32::from_rgb(155, 165, 185)),
         );
         return;
     }
@@ -913,9 +1055,17 @@ fn render_share(ui: &mut Ui, app: &mut KissaApp) {
     .to_string();
     let code = format!("lofi-scene-v1:{}", B64.encode(json.as_bytes()));
 
-    ui.label(RichText::new("EXPORT CURRENT ATMOSPHERE").size(10.5).color(Color32::from_rgb(145, 155, 175)));
+    ui.label(
+        RichText::new("EXPORT CURRENT ATMOSPHERE")
+            .size(10.5)
+            .color(Color32::from_rgb(145, 155, 175)),
+    );
     let mut ro = code.clone();
-    ui.add(egui::TextEdit::multiline(&mut ro).desired_rows(3).desired_width(f32::INFINITY));
+    ui.add(
+        egui::TextEdit::multiline(&mut ro)
+            .desired_rows(3)
+            .desired_width(f32::INFINITY),
+    );
     if ui.button("Copy Scene Code").clicked() {
         if let Ok(mut cb) = arboard::Clipboard::new() {
             let _ = cb.set_text(code);
@@ -924,7 +1074,11 @@ fn render_share(ui: &mut Ui, app: &mut KissaApp) {
     }
 
     ui.add_space(8.0);
-    ui.label(RichText::new("IMPORT SHARED CODE OR JSON").size(10.5).color(Color32::from_rgb(145, 155, 175)));
+    ui.label(
+        RichText::new("IMPORT SHARED CODE OR JSON")
+            .size(10.5)
+            .color(Color32::from_rgb(145, 155, 175)),
+    );
     ui.add(
         egui::TextEdit::multiline(&mut app.share_import_text)
             .hint_text("Paste lofi-scene-v1:... or JSON here")
@@ -956,7 +1110,11 @@ fn render_keys(ui: &mut Ui, app: &mut KissaApp) {
         ui.horizontal(|ui| {
             ui.label(desc);
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
-                ui.label(RichText::new(k).monospace().color(Color32::from_rgb(125, 211, 252)));
+                ui.label(
+                    RichText::new(k)
+                        .monospace()
+                        .color(Color32::from_rgb(125, 211, 252)),
+                );
             });
         });
     }
@@ -1000,7 +1158,11 @@ fn render_focus(ui: &mut Ui, app: &mut KissaApp) {
             ui.label(
                 RichText::new(format!(
                     "{} · Completed today: {}",
-                    if app.focus_is_break { "Break time" } else { "Focus session" },
+                    if app.focus_is_break {
+                        "Break time"
+                    } else {
+                        "Focus session"
+                    },
                     app.config.completed_focus_sessions
                 ))
                 .size(11.5)
@@ -1009,7 +1171,11 @@ fn render_focus(ui: &mut Ui, app: &mut KissaApp) {
             ui.add_space(6.0);
             ui.horizontal(|ui| {
                 if ui
-                    .button(if app.focus_running { "Pause" } else { "Start Focus" })
+                    .button(if app.focus_running {
+                        "Pause"
+                    } else {
+                        "Start Focus"
+                    })
                     .clicked()
                 {
                     app.focus_running = !app.focus_running;
@@ -1028,9 +1194,15 @@ fn render_focus(ui: &mut Ui, app: &mut KissaApp) {
     });
 
     ui.add_space(8.0);
-    ui.label(RichText::new("SESSION GOALS").size(10.5).color(Color32::from_rgb(145, 155, 175)));
+    ui.label(
+        RichText::new("SESSION GOALS")
+            .size(10.5)
+            .color(Color32::from_rgb(145, 155, 175)),
+    );
     ui.horizontal(|ui| {
-        let resp = ui.add(egui::TextEdit::singleline(&mut app.new_task_text).hint_text("Add a focus task..."));
+        let resp = ui.add(
+            egui::TextEdit::singleline(&mut app.new_task_text).hint_text("Add a focus task..."),
+        );
         let enter = resp.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
         if (ui.button("Add").clicked() || enter) && !app.new_task_text.trim().is_empty() {
             let text = app.new_task_text.trim().to_string();
@@ -1064,7 +1236,13 @@ fn render_sleep(ui: &mut Ui, app: &mut KissaApp) {
             } else {
                 "Off".to_string()
             };
-            ui.label(RichText::new(txt).size(38.0).strong().monospace().color(Color32::WHITE));
+            ui.label(
+                RichText::new(txt)
+                    .size(38.0)
+                    .strong()
+                    .monospace()
+                    .color(Color32::WHITE),
+            );
             ui.label(
                 RichText::new("Audio & ambience smoothly fade out during the final 30 seconds.")
                     .size(11.5)

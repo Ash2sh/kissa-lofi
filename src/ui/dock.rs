@@ -38,7 +38,10 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
         .show(ctx, |ui| {
             Frame::new()
                 .fill(Color32::from_rgba_unmultiplied(12, 13, 19, 226))
-                .stroke(Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 24)))
+                .stroke(Stroke::new(
+                    1.0,
+                    Color32::from_rgba_unmultiplied(255, 255, 255, 24),
+                ))
                 .corner_radius(CornerRadius::same(18))
                 .inner_margin(Margin::symmetric(14, 10))
                 .shadow(egui::Shadow {
@@ -56,10 +59,8 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
                             .horizontal_centered(|ui| {
                                 ui.spacing_mut().item_spacing.x = 10.0;
                                 // Rounded blue gradient album tile
-                                let (thumb_rect, _) = ui.allocate_exact_size(
-                                    Vec2::splat(42.0),
-                                    Sense::click(),
-                                );
+                                let (thumb_rect, _) =
+                                    ui.allocate_exact_size(Vec2::splat(42.0), Sense::click());
                                 paint_album_thumb(ui.painter(), thumb_rect, state.playing);
 
                                 ui.vertical(|ui| {
@@ -81,16 +82,14 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
                                         )
                                         .truncate(),
                                     );
-                                    ui.label(
-                                        egui::RichText::new(state.subtitle)
-                                            .size(10.0)
-                                            .color(Color32::from_rgba_unmultiplied(210, 218, 235, 130)),
-                                    );
+                                    ui.label(egui::RichText::new(state.subtitle).size(10.0).color(
+                                        Color32::from_rgba_unmultiplied(210, 218, 235, 130),
+                                    ));
                                     ui.add(
                                         egui::Label::new(
-                                            egui::RichText::new(state.status_line)
-                                                .size(9.8)
-                                                .color(Color32::from_rgba_unmultiplied(210, 218, 235, 155)),
+                                            egui::RichText::new(state.status_line).size(9.8).color(
+                                                Color32::from_rgba_unmultiplied(210, 218, 235, 155),
+                                            ),
                                         )
                                         .truncate(),
                                     );
@@ -110,10 +109,15 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
                         } else {
                             Color32::from_rgb(245, 248, 252)
                         };
-                        ui.painter().circle_filled(play_rect.center(), 19.0, play_bg);
+                        ui.painter()
+                            .circle_filled(play_rect.center(), 19.0, play_bg);
                         paint_play_pause_glyph(ui.painter(), play_rect.center(), state.playing);
                         if play_resp
-                            .on_hover_text(if state.playing { "Pause (Space)" } else { "Play (Space)" })
+                            .on_hover_text(if state.playing {
+                                "Pause (Space)"
+                            } else {
+                                "Play (Space)"
+                            })
                             .clicked()
                         {
                             events.toggle_play = true;
@@ -138,7 +142,11 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
                                 events.toggle_mute = true;
                             }
 
-                            let mut vol_pct = if state.muted { 0.0 } else { state.volume * 100.0 };
+                            let mut vol_pct = if state.muted {
+                                0.0
+                            } else {
+                                state.volume * 100.0
+                            };
                             let slider = egui::Slider::new(&mut vol_pct, 0.0..=100.0)
                                 .show_value(false)
                                 .trailing_fill(true);
@@ -149,7 +157,8 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
                         });
 
                         // Subtle divider
-                        let (div_rect, _) = ui.allocate_exact_size(Vec2::new(1.0, 32.0), Sense::hover());
+                        let (div_rect, _) =
+                            ui.allocate_exact_size(Vec2::new(1.0, 32.0), Sense::hover());
                         ui.painter().rect_filled(
                             div_rect,
                             0.0,
@@ -172,13 +181,17 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
                                     Color32::TRANSPARENT
                                 };
                                 if bg != Color32::TRANSPARENT {
-                                    ui.painter().rect_filled(btn_rect, CornerRadius::same(10), bg);
+                                    ui.painter()
+                                        .rect_filled(btn_rect, CornerRadius::same(10), bg);
                                 }
                                 if is_active {
                                     ui.painter().rect_stroke(
                                         btn_rect,
                                         CornerRadius::same(10),
-                                        Stroke::new(1.0, Color32::from_rgba_unmultiplied(255, 255, 255, 45)),
+                                        Stroke::new(
+                                            1.0,
+                                            Color32::from_rgba_unmultiplied(255, 255, 255, 45),
+                                        ),
                                         egui::StrokeKind::Inside,
                                     );
                                 }
@@ -189,7 +202,8 @@ pub fn show_dock(ctx: &egui::Context, state: &DockViewState<'_>) -> DockEvents {
                                     Color32::from_rgba_unmultiplied(235, 240, 252, 205)
                                 };
 
-                                let icon_center = Pos2::new(btn_rect.center().x, btn_rect.top() + 15.0);
+                                let icon_center =
+                                    Pos2::new(btn_rect.center().x, btn_rect.top() + 15.0);
                                 paint_dock_icon(ui.painter(), icon_center, &module.icon, fg);
 
                                 ui.painter().text(
@@ -258,7 +272,10 @@ fn paint_album_thumb(painter: &Painter, rect: Rect, playing: bool) {
     let s = Stroke::new(2.2, Color32::WHITE);
     painter.line_segment([c + Vec2::new(-4.0, 6.0), c + Vec2::new(-4.0, -7.0)], s);
     painter.line_segment([c + Vec2::new(6.0, 4.0), c + Vec2::new(6.0, -9.0)], s);
-    painter.line_segment([c + Vec2::new(-4.5, -7.0), c + Vec2::new(6.5, -9.0)], Stroke::new(3.0, Color32::WHITE));
+    painter.line_segment(
+        [c + Vec2::new(-4.5, -7.0), c + Vec2::new(6.5, -9.0)],
+        Stroke::new(3.0, Color32::WHITE),
+    );
     painter.circle_filled(c + Vec2::new(-6.5, 6.5), 3.2, Color32::WHITE);
     painter.circle_filled(c + Vec2::new(3.5, 4.5), 3.2, Color32::WHITE);
 }
@@ -322,7 +339,10 @@ pub fn paint_dock_icon(painter: &Painter, c: Pos2, icon: &str, color: Color32) {
             for &(x, knob_y) in &[(-5.0_f32, 1.5_f32), (0.0, -2.0), (5.0, 2.5)] {
                 painter.line_segment([c + Vec2::new(x, -6.5), c + Vec2::new(x, 6.5)], st);
                 painter.line_segment(
-                    [c + Vec2::new(x - 2.0, knob_y), c + Vec2::new(x + 2.0, knob_y)],
+                    [
+                        c + Vec2::new(x - 2.0, knob_y),
+                        c + Vec2::new(x + 2.0, knob_y),
+                    ],
                     Stroke::new(2.0, color),
                 );
             }

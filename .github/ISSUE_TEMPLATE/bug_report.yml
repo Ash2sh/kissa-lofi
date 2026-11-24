@@ -1,0 +1,47 @@
+name: Bug Report
+description: Report a crash, audio glitch, visual bug, or unexpected memory growth.
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: textarea
+    id: description
+    attributes:
+      label: What happened?
+      description: A clear description of the bug and what you expected to happen.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      placeholder: |
+        1. Launch Kissa
+        2. Open '...'
+        3. Click '...'
+    validations:
+      required: true
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Windows 11
+        - Windows 10
+        - macOS (Apple Silicon)
+        - macOS (Intel)
+        - Linux (Wayland)
+        - Linux (X11)
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Kissa Version / Commit SHA
+      placeholder: "v0.2.0-alpha.1"
+    validations:
+      required: true
+  - type: textarea
+    id: extra
+    attributes:
+      label: Logs, Screenshots, or Media Info
+      description: Optional console output, FFmpeg version, or audio/video file format details.
