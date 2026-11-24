@@ -1,8 +1,9 @@
-;; Example Lofi Desktop WebAssembly Plugin (ABI v1)
-;; Drop this .wat file (or its compiled .wasm) into your local plugins/ directory.
+;; Example Kissa WebAssembly Dock Plugin (ABI v1)
+;; Drop this .wat file (or its compiled .wasm) into your local plugins/ directory
+;; to add a custom "Warmth" button directly onto Kissa's bottom dock!
 (module
   (memory (export "memory") 1)
-  (data (i32.const 1024) "{\"id\":\"wasm-rainy-lofi-example\",\"name\":\"Rainy Cassette Example\",\"version\":\"1.0.0\",\"author\":\"Community\",\"description\":\"Example WebAssembly Text (.wat) plugin that boosts cozy sub-bass and rolls off harsh highs.\",\"capabilities\":[\"eq-dsp\",\"eq-presets\"],\"eqPresets\":[{\"id\":\"wasm-rainy-example-eq\",\"name\":\"Rainy Cassette (WAT)\",\"bands\":[3.2,1.6,-0.5,-2.4,-4.8],\"tapeCutoffHz\":5000}],\"transformNote\":\"Applied Rainy Cassette curve from .wat plugin\"}")
+  (data (i32.const 1024) "{\"id\":\"wasm-rainy-lofi-example\",\"name\":\"Rainy Warmth\",\"version\":\"1.0.0\",\"author\":\"Community\",\"description\":\"Example .wat dock plugin that adds a Warmth button, boosts cozy bass, and rolls off harsh highs.\",\"capabilities\":[\"dock-module\",\"eq-dsp\",\"eq-presets\"],\"dockModule\":{\"id\":\"wasm-rainy-warmth\",\"label\":\"Warmth\",\"icon\":\"flame\",\"order\":120},\"panelActions\":[{\"id\":\"apply-warmth\",\"label\":\"Apply Warmth Curve\",\"style\":\"accent\",\"effect\":\"wasm-eq\"},{\"id\":\"add-rain\",\"label\":\"Add Rain (50%)\",\"style\":\"default\",\"effect\":\"ambience\",\"target\":\"rain\",\"amount\":0.5},{\"id\":\"reset-flat\",\"label\":\"Reset Flat EQ\",\"style\":\"default\",\"effect\":\"reset-eq\"}],\"eqPresets\":[{\"id\":\"wasm-rainy-example-eq\",\"name\":\"Rainy Warmth (WAT)\",\"bands\":[3.2,1.6,-0.5,-2.4,-4.8],\"tapeCutoffHz\":5000}],\"transformNote\":\"Applied Rainy Warmth curve from .wat plugin\"}")
 
   (func (export "lofi_abi_version") (result i32)
     (i32.const 1)
@@ -13,7 +14,7 @@
   )
 
   (func (export "lofi_metadata_len") (result i32)
-    (i32.const 442)
+    (i32.const 827)
   )
 
   (func (export "lofi_result_ptr") (result i32)

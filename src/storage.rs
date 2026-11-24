@@ -1,17 +1,16 @@
 use crate::models::{
-    AppConfig, HistoryEntry, LibraryDirectories, LibrarySnapshot, MediaItem, MediaKind, ScenePreset,
-    VisualFxSettings, VisualSource, AudioSourceRef,
+    AppConfig, AudioSourceRef, HistoryEntry, LibraryDirectories, LibrarySnapshot, MediaItem,
+    MediaKind, ScenePreset, VisualFxSettings, VisualSource,
 };
-use percent_encoding::{utf8_percent_encode, NON_ALPHANUMERIC};
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 use walkdir::WalkDir;
 
-const AUDIO_EXTS: &[&str] = &["mp3", "wav", "flac", "ogg", "m4a", "aac", "opus", "webm"];
-const IMAGE_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp", "gif", "bmp", "avif"];
-const VIDEO_EXTS: &[&str] = &["mp4", "webm", "mov", "m4v", "ogv"];
+const AUDIO_EXTS: &[&str] = &["mp3", "wav", "flac", "ogg", "m4a", "aac"];
+const IMAGE_EXTS: &[&str] = &["jpg", "jpeg", "png", "webp", "gif", "bmp"];
+const VIDEO_EXTS: &[&str] = &["mp4", "webm", "mov", "m4v", "mkv"];
 
 pub struct LocalStorage {
     pub app_data_dir: PathBuf,
@@ -22,6 +21,12 @@ pub struct LocalStorage {
 }
 
 impl LocalStorage {
+    pub fn default_app_dir() -> PathBuf {
+        dirs::data_dir()
+            .unwrap_or_else(|| PathBuf::from("."))
+            .join("kissa")
+    }
+
     pub fn new(app_data_dir: PathBuf) -> Result<Self, String> {
         let music_dir = app_data_dir.join("music");
         let visuals_dir = app_data_dir.join("visuals");
@@ -55,8 +60,7 @@ impl LocalStorage {
     }
 
     pub fn load_config(&self) -> AppConfig {
-        let path = self.config_path();
-        if let Ok(raw) = fs::read_to_string(&path) {
+        if let Ok(raw) = fs::read_to_string(self.config_path()) {
             if let Ok(cfg) = serde_json::from_str::<AppConfig>(&raw) {
                 return cfg;
             }
@@ -105,11 +109,7 @@ impl LocalStorage {
     }
 
     pub fn save_history(&self, entries: &[HistoryEntry]) -> Result<(), String> {
-        let trimmed = if entries.len() > 80 {
-            &entries[..80]
-        } else {
-            entries
-        };
+        let trimmed = if entries.len() > 80 { &entries[..80] } else { entries };
         let raw = serde_json::to_string_pretty(trimmed)
             .map_err(|e| format!("Failed to serialize history: {e}"))?;
         fs::write(self.history_path(), raw)
@@ -150,21 +150,20 @@ impl LocalStorage {
         });
         let ambient_sounds = scan_roots(&sound_roots, AUDIO_EXTS, |_| MediaKind::Ambient);
 
-        // Include individual user-picked files that live outside scanned folders
-        let mut seen_paths: HashSet<String> = music
+        let mut seen: HashSet<String> = music
             .iter()
             .chain(visuals.iter())
             .chain(ambient_sounds.iter())
             .map(|item| normalize_path_key(Path::new(&item.file_path)))
             .collect();
 
-        for raw_file in &config.allowed_files {
+        for raw_file in &config.extra_files {
             let p = Path::new(raw_file);
             if !p.is_file() {
                 continue;
             }
             let key = normalize_path_key(p);
-            if seen_paths.contains(&key) {
+            if seen.contains(&key) {
                 continue;
             }
             let Some(ext) = p.extension().and_then(|e| e.to_str()).map(|s| s.to_ascii_lowercase()) else {
@@ -172,17 +171,17 @@ impl LocalStorage {
             };
             if VIDEO_EXTS.contains(&ext.as_str()) {
                 if let Some(item) = build_media_item(p, MediaKind::Video, &ext) {
-                    seen_paths.insert(key);
+                    seen.insert(key);
                     visuals.push(item);
                 }
             } else if IMAGE_EXTS.contains(&ext.as_str()) {
                 if let Some(item) = build_media_item(p, MediaKind::Image, &ext) {
-                    seen_paths.insert(key);
+                    seen.insert(key);
                     visuals.push(item);
                 }
             } else if AUDIO_EXTS.contains(&ext.as_str()) {
                 if let Some(item) = build_media_item(p, MediaKind::Audio, &ext) {
-                    seen_paths.insert(key);
+                    seen.insert(key);
                     music.push(item);
                 }
             }
@@ -198,50 +197,6 @@ impl LocalStorage {
             directories: self.directories_snapshot(config),
         }
     }
-
-    /// Validates that a requested local file is within the app's local media folders,
-    /// user-configured custom directories, or explicitly added individual files.
-    pub fn is_path_allowed(&self, requested: &Path, config: &AppConfig) -> bool {
-        let Ok(canon_req) = fs::canonicalize(requested) else {
-            return false;
-        };
-        if !canon_req.is_file() {
-            return false;
-        }
-
-        let mut allowed_dirs: Vec<PathBuf> = vec![
-            self.music_dir.clone(),
-            self.visuals_dir.clone(),
-            self.sounds_dir.clone(),
-        ];
-        allowed_dirs.extend(config.custom_music_dirs.iter().map(PathBuf::from));
-        allowed_dirs.extend(config.custom_visual_dirs.iter().map(PathBuf::from));
-        allowed_dirs.extend(config.custom_sound_dirs.iter().map(PathBuf::from));
-
-        for dir in allowed_dirs {
-            if let Ok(canon_dir) = fs::canonicalize(&dir) {
-                if canon_req.starts_with(&canon_dir) {
-                    return true;
-                }
-            }
-        }
-
-        for file in &config.allowed_files {
-            if let Ok(canon_file) = fs::canonicalize(file) {
-                if canon_req == canon_file {
-                    return true;
-                }
-            }
-        }
-
-        false
-    }
-}
-
-pub fn make_stream_url(path: &Path) -> String {
-    let raw = path.to_string_lossy();
-    let encoded = utf8_percent_encode(&raw, NON_ALPHANUMERIC).to_string();
-    format!("lofi://localhost/media?path={encoded}")
 }
 
 fn concat_exts() -> Vec<&'static str> {
@@ -293,14 +248,28 @@ where
             if !seen.insert(key) {
                 continue;
             }
-            let kind = classify(&ext);
-            if let Some(item) = build_media_item(path, kind, &ext) {
+            if let Some(item) = build_media_item(path, classify(&ext), &ext) {
                 items.push(item);
             }
         }
     }
-
     items
+}
+
+pub fn classify_media_path(path: &Path) -> Option<(MediaKind, String)> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(|s| s.to_ascii_lowercase())?;
+    if VIDEO_EXTS.contains(&ext.as_str()) {
+        Some((MediaKind::Video, ext))
+    } else if IMAGE_EXTS.contains(&ext.as_str()) {
+        Some((MediaKind::Image, ext))
+    } else if AUDIO_EXTS.contains(&ext.as_str()) {
+        Some((MediaKind::Audio, ext))
+    } else {
+        None
+    }
 }
 
 pub fn build_media_item(path: &Path, kind: MediaKind, ext: &str) -> Option<MediaItem> {
@@ -322,18 +291,14 @@ pub fn build_media_item(path: &Path, kind: MediaKind, ext: &str) -> Option<Media
         .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
         .map(|d| d.as_secs())
         .unwrap_or(0);
-    let abs_path = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
-    let abs_str = strip_windows_verbatim_prefix(&abs_path.to_string_lossy());
-    let id = format!(
-        "local-{:x}",
-        fnv1a_hash(abs_str.as_bytes())
-    );
+    let abs = fs::canonicalize(path).unwrap_or_else(|_| path.to_path_buf());
+    let abs_str = strip_windows_verbatim_prefix(&abs.to_string_lossy());
+    let id = format!("local-{:x}", fnv1a_hash(abs_str.as_bytes()));
 
     Some(MediaItem {
         id,
         title,
         subtitle: folder,
-        stream_url: make_stream_url(Path::new(&abs_str)),
         file_path: abs_str,
         kind,
         extension: ext.to_string(),
@@ -391,18 +356,8 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 kind: "canvas".to_string(),
                 id: "rainy-window-cat".to_string(),
                 label: "Rainy Window Cat".to_string(),
-                stream_url: None,
             },
-            visual_fx: VisualFxSettings {
-                rain_overlay: 0.55,
-                vignette: 0.35,
-                film_grain: 0.10,
-                dim: 0.04,
-                warm_tint: 0.08,
-                blur: 0.0,
-                fps_cap: 30,
-                pause_when_hidden: true,
-            },
+            visual_fx: VisualFxSettings::default(),
             eq_preset_id: "flat".to_string(),
             eq_bands: [0.0, 0.0, 0.0, 0.0, 0.0],
             tape_cutoff_hz: 18500.0,
@@ -412,7 +367,7 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 id: "focus-zone-relax-mellow".to_string(),
                 label: "focus-zone-relax-mellow".to_string(),
             },
-            accent_color: "#7dd3fc".to_string(),
+            accent_rgb: [125, 211, 252],
         },
         ScenePreset {
             id: "rain-study-session".to_string(),
@@ -424,15 +379,12 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 kind: "canvas".to_string(),
                 id: "rainy-window-cat".to_string(),
                 label: "Rainy Window Cat".to_string(),
-                stream_url: None,
             },
             visual_fx: VisualFxSettings {
                 rain_overlay: 0.72,
                 vignette: 0.40,
-                film_grain: 0.15,
                 dim: 0.10,
                 warm_tint: 0.14,
-                blur: 0.0,
                 fps_cap: 30,
                 pause_when_hidden: true,
             },
@@ -445,7 +397,7 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 id: "midnight-study-rhodes".to_string(),
                 label: "midnight-study-rhodes".to_string(),
             },
-            accent_color: "#a78bfa".to_string(),
+            accent_rgb: [167, 139, 250],
         },
         ScenePreset {
             id: "neon-rain-skyline".to_string(),
@@ -457,15 +409,12 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 kind: "canvas".to_string(),
                 id: "neon-rain-skyline".to_string(),
                 label: "Neon Rain Skyline".to_string(),
-                stream_url: None,
             },
             visual_fx: VisualFxSettings {
                 rain_overlay: 0.65,
                 vignette: 0.42,
-                film_grain: 0.12,
                 dim: 0.08,
                 warm_tint: 0.0,
-                blur: 0.0,
                 fps_cap: 30,
                 pause_when_hidden: true,
             },
@@ -478,7 +427,7 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 id: "tokyo-afterhours-dub".to_string(),
                 label: "tokyo-afterhours-dub".to_string(),
             },
-            accent_color: "#f472b6".to_string(),
+            accent_rgb: [244, 114, 182],
         },
         ScenePreset {
             id: "warm-hearth-dusk".to_string(),
@@ -490,15 +439,12 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 kind: "canvas".to_string(),
                 id: "warm-study-dusk".to_string(),
                 label: "Warm Study Dusk".to_string(),
-                stream_url: None,
             },
             visual_fx: VisualFxSettings {
                 rain_overlay: 0.0,
                 vignette: 0.30,
-                film_grain: 0.14,
                 dim: 0.06,
                 warm_tint: 0.25,
-                blur: 0.0,
                 fps_cap: 30,
                 pause_when_hidden: true,
             },
@@ -511,7 +457,7 @@ pub fn default_builtin_scenes() -> Vec<ScenePreset> {
                 id: "sleepy-sunset-tape".to_string(),
                 label: "sleepy-sunset-tape".to_string(),
             },
-            accent_color: "#fbbf24".to_string(),
+            accent_rgb: [251, 191, 36],
         },
     ]
 }
@@ -521,25 +467,22 @@ mod tests {
     use super::*;
 
     #[test]
-    fn enforces_local_library_allowlist_and_scans_media() {
-        let base = std::env::temp_dir().join(format!("lofi_storage_test_{}", std::process::id()));
+    fn scans_local_music_and_visuals_cleanly() {
+        let base = std::env::temp_dir().join(format!("kissa_storage_test_{}", std::process::id()));
         let _ = fs::remove_dir_all(&base);
         let storage = LocalStorage::new(base.clone()).unwrap();
         let cfg = storage.load_config();
 
         let track = storage.music_dir.join("midnight-rain.mp3");
-        fs::write(&track, b"fake-mp3-data").unwrap();
-        let outside = std::env::temp_dir().join(format!("lofi_outside_{}.mp3", std::process::id()));
-        fs::write(&outside, b"outside").unwrap();
-
-        assert!(storage.is_path_allowed(&track, &cfg));
-        assert!(!storage.is_path_allowed(&outside, &cfg));
+        let vid = storage.visuals_dir.join("tokyo-loop.mp4");
+        fs::write(&track, b"fake-mp3").unwrap();
+        fs::write(&vid, b"fake-mp4").unwrap();
 
         let snap = storage.scan_library(&cfg);
         assert_eq!(snap.music.len(), 1);
-        assert_eq!(snap.music[0].title, "midnight-rain");
+        assert_eq!(snap.visuals.len(), 1);
+        assert_eq!(snap.visuals[0].kind, MediaKind::Video);
 
-        let _ = fs::remove_file(&outside);
         let _ = fs::remove_dir_all(&base);
     }
 }

@@ -1,7 +1,5 @@
-# Dependencies & build outputs
-node_modules/
-dist/
-src-tauri/target/
+# Rust build artifacts
+target/
 
 # OS & editor files
 .DS_Store

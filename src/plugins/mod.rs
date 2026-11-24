@@ -1,9 +1,9 @@
-pub mod native;
+pub mod builtin;
 pub mod wasm_runtime;
 
 use crate::models::{
-    EqPreset, PluginEqTransformResult, PluginKind, PluginMetadata, PluginRegistrySnapshot,
-    PluginSceneContribution,
+    DockModuleSpec, EqPreset, PluginActionResponse, PluginEqTransformResult,
+    PluginMetadata, PluginPanelView, PluginRegistrySnapshot,
 };
 use std::collections::HashSet;
 use std::fs;
@@ -24,6 +24,8 @@ pub enum PluginError {
     NotFound(String),
     #[error("Plugin '{0}' is currently disabled")]
     Disabled(String),
+    #[error("Plugin '{0}' does not support this capability")]
+    Unsupported(String),
 }
 
 #[derive(Debug, Clone)]
@@ -33,19 +35,42 @@ pub enum PluginEvent {
     FocusSessionComplete { total_sessions: i32 },
 }
 
-/// Unified Rust trait interface shared by both native plugins and dynamically
-/// loaded WebAssembly (.wasm / .wat) plugins.
+/// Unified Rust trait interface shared by ALL built-in dock module plugins
+/// (EQ, Music, Visuals, Sounds, Scenes, History, Share, Keys, Focus, Sleep)
+/// and dynamically loaded WebAssembly (.wasm / .wat) plugins.
 pub trait LofiPlugin: Send + Sync {
     fn id(&self) -> &str;
     fn metadata(&self) -> PluginMetadata;
-    fn eq_presets(&self) -> Vec<EqPreset>;
-    fn scene_contributions(&self) -> Vec<PluginSceneContribution>;
+    fn dock_module(&self) -> Option<DockModuleSpec>;
+
+    fn eq_presets(&self) -> Vec<EqPreset> {
+        Vec::new()
+    }
+
+    fn render_panel(&self) -> Result<Option<PluginPanelView>, PluginError> {
+        Ok(None)
+    }
+
+    fn invoke_action(
+        &self,
+        _action_id: &str,
+        _value: f32,
+        _current_eq: [f32; 5],
+    ) -> Result<PluginActionResponse, PluginError> {
+        Err(PluginError::Unsupported(self.id().to_string()))
+    }
+
     fn transform_eq(
         &self,
-        bands: [f32; 5],
-        intensity: f32,
-    ) -> Result<PluginEqTransformResult, PluginError>;
-    fn on_event(&self, event: &PluginEvent) -> Result<i32, PluginError>;
+        _bands: [f32; 5],
+        _intensity: f32,
+    ) -> Result<PluginEqTransformResult, PluginError> {
+        Err(PluginError::Unsupported(self.id().to_string()))
+    }
+
+    fn on_event(&self, _event: &PluginEvent) -> Result<i32, PluginError> {
+        Ok(0)
+    }
 }
 
 pub struct PluginManager {
@@ -63,13 +88,9 @@ impl PluginManager {
         }
     }
 
-    /// Seeds starter .wasm binaries into the default plugins directory on first launch
-    /// so users immediately have real dynamically loaded Wasm modules on disk.
     pub fn ensure_starter_wasm_plugins(plugins_dir: &Path) -> Result<(), PluginError> {
         fs::create_dir_all(plugins_dir).map_err(|e| PluginError::Io(e.to_string()))?;
-
-        let starters = wasm_runtime::starter_wasm_modules();
-        for (filename, wasm_bytes) in starters {
+        for (filename, wasm_bytes) in wasm_runtime::starter_wasm_modules() {
             let dest = plugins_dir.join(filename);
             if !dest.exists() {
                 fs::write(&dest, wasm_bytes).map_err(|e| PluginError::Io(e.to_string()))?;
@@ -82,10 +103,10 @@ impl PluginManager {
         self.plugins.clear();
         self.load_errors.clear();
 
-        // 1. Register unified native built-in plugin
-        self.plugins.push(Box::new(native::CoreAtmospherePlugin::new()));
+        for builtin_plugin in builtin::builtin_module_plugins() {
+            self.plugins.push(builtin_plugin);
+        }
 
-        // 2. Discover & dynamically load .wasm and .wat plugins from all configured directories
         let mut seen_ids: HashSet<String> = self
             .plugins
             .iter()
@@ -105,7 +126,10 @@ impl PluginManager {
                 .filter(|p| {
                     p.is_file()
                         && matches!(
-                            p.extension().and_then(|e| e.to_str()).map(|s| s.to_ascii_lowercase()).as_deref(),
+                            p.extension()
+                                .and_then(|e| e.to_str())
+                                .map(|s| s.to_ascii_lowercase())
+                                .as_deref(),
                             Some("wasm") | Some("wat")
                         )
                 })
@@ -120,8 +144,7 @@ impl PluginManager {
                         }
                     }
                     Err(err) => {
-                        self.load_errors
-                            .push(format!("{}: {err}", path.display()));
+                        self.load_errors.push(format!("{}: {err}", path.display()));
                     }
                 }
             }
@@ -148,8 +171,8 @@ impl PluginManager {
 
     pub fn snapshot(&self) -> PluginRegistrySnapshot {
         let mut plugins = Vec::new();
+        let mut dock_modules = Vec::new();
         let mut eq_presets = Vec::new();
-        let mut scene_contributions = Vec::new();
 
         for plugin in &self.plugins {
             let mut meta = plugin.metadata();
@@ -158,17 +181,54 @@ impl PluginManager {
             plugins.push(meta);
 
             if enabled {
+                if let Some(dock) = plugin.dock_module() {
+                    dock_modules.push(dock);
+                }
                 eq_presets.extend(plugin.eq_presets());
-                scene_contributions.extend(plugin.scene_contributions());
             }
         }
 
+        dock_modules.sort_by_key(|m| m.order);
+
         PluginRegistrySnapshot {
             plugins,
+            dock_modules,
             eq_presets,
-            scene_contributions,
             load_errors: self.load_errors.clone(),
         }
+    }
+
+    pub fn render_plugin_panel(
+        &self,
+        plugin_id: &str,
+    ) -> Result<Option<PluginPanelView>, PluginError> {
+        if self.disabled.contains(plugin_id) {
+            return Err(PluginError::Disabled(plugin_id.to_string()));
+        }
+        let plugin = self
+            .plugins
+            .iter()
+            .find(|p| p.id() == plugin_id)
+            .ok_or_else(|| PluginError::NotFound(plugin_id.to_string()))?;
+        plugin.render_panel()
+    }
+
+    pub fn invoke_plugin_action(
+        &self,
+        plugin_id: &str,
+        action_id: &str,
+        value: f32,
+        current_eq: [f32; 5],
+    ) -> Result<PluginActionResponse, PluginError> {
+        if self.disabled.contains(plugin_id) {
+            return Err(PluginError::Disabled(plugin_id.to_string()));
+        }
+        let plugin = self
+            .plugins
+            .iter()
+            .find(|p| p.id() == plugin_id)
+            .ok_or_else(|| PluginError::NotFound(plugin_id.to_string()))?;
+        plugin.invoke_action(action_id, value, current_eq)
     }
 
     pub fn apply_eq_transform(
@@ -196,15 +256,5 @@ impl PluginManager {
             }
         }
         handled
-    }
-
-    pub fn counts(&self) -> (usize, usize) {
-        let total = self.plugins.len();
-        let wasm = self
-            .plugins
-            .iter()
-            .filter(|p| p.metadata().kind == PluginKind::Wasm)
-            .count();
-        (total, wasm)
     }
 }
